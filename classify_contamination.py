@@ -8,12 +8,22 @@ import pandas as pd
 def open_file(out_dir, file_name_data, file_name_control, col_name):
     """
     """
-    virus_data = pd.read_csv(os.path.join(out_dir, file_name_data),
-                            sep=";", header=0, names=col_name,
-                            index_col=False)
+    try:
+        virus_data = pd.read_csv(os.path.join(out_dir, file_name_data),
+                                sep=";", header=0, names=col_name,
+                                index_col=False)
+    except pd.errors.ParserError:
+        virus_data = pd.read_csv(os.path.join(out_dir, file_name_data),
+                                sep=",", header=0, names=col_name,
+                                index_col=False)        
     col_name.append("Indexing")
-    control_data = pd.read_csv(os.path.join(out_dir, file_name_control),
+    try:
+        control_data = pd.read_csv(os.path.join(out_dir, file_name_control),
                         sep=";", header=0, names=col_name,
+                        index_col=False)
+    except pd.errors.ParserError:
+        control_data = pd.read_csv(os.path.join(out_dir, file_name_control),
+                        sep=",", header=0, names=col_name,
                         index_col=False)
 
     return virus_data, control_data
@@ -51,9 +61,17 @@ def calculate_threshold(control_data):
     ###### T1
     # T1= [nb read >5] + [(Mapped reads Nr./ Hihgest Reads Nr. Per sample in the same run) > ((avg+3*std)/2)]
     # avg is average mapping_ratio of contaminated sample from control virus 
-    mean_conta = control_data.groupby("Indexing")['mapping_ratio'].mean()[0]
+    try:
+        mean_conta = control_data.groupby("Indexing")['mapping_ratio'].mean().loc[0]
+    except KeyError:
+        mean_conta = control_data.groupby("Indexing")['mapping_ratio'].mean().loc["ABSENT"]
+    print(mean_conta)
     # std standart deviation of contaminated sample from control virus
-    std_conta = control_data.groupby("Indexing")['mapping_ratio'].std()[0]
+    try:
+        std_conta = control_data.groupby("Indexing")['mapping_ratio'].std().loc[0]
+    except KeyError:
+        std_conta = control_data.groupby("Indexing")['mapping_ratio'].std().loc["ABSENT"]
+    print(mean_conta)
     # threshold is (avg+3*std)/2
     t1_threshold = (mean_conta+3*std_conta)/2
     # FIXME What to do is not contamination from control at all, consider all virus as infection ????
@@ -167,9 +185,10 @@ def classify_virus(virus_data, control_data, t1_threshold, t2_threshold, t3_thre
 if __name__ == "__main__":
 
     #TODO argparse use argument
-    out_dir = "/mnt/c/Users/johan/OneDrive/Bureau/bioinfo/Wei_virus_test/viral_contamination/"
+    out_dir = "/mnt/c/Users/johan/OneDrive/Bureau/bioinfo/Wei_virus_test/"
     file_name_data = "Conta_virus_batch1v2.csv"
-    file_name_control = "Conta_virus_batch1v2_control.csv"
+    #file_name_control = "Conta_virus_batch1v2_control.csv"
+    file_name_control = "Input_file_control_batch1.csv"
     col_name = ["Virus_detected","Sample_name","Reads_nb_mapped", "deduplication"]
 
     # open input file
