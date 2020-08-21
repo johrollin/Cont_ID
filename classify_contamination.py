@@ -55,9 +55,13 @@ def calculate_mapping_ratio(virus_data,control_data):
 
 def calculate_threshold(control_data):
     """
+    calculate threshold value from control
+    Get all samplename from control to set target virus to contamination for those sample
     """
-    
-    
+    control_name = []
+    for el in control_data.itertuples():
+        if el.Indexing == 1 or el.Indexing == "PRESENT":
+            control_name.append(el.Sample_name)
     ###### T1
     # T1= [nb read >5] + [(Mapped reads Nr./ Hihgest Reads Nr. Per sample in the same run) > ((avg+3*std)/2)]
     # avg is average mapping_ratio of contaminated sample from control virus 
@@ -65,13 +69,11 @@ def calculate_threshold(control_data):
         mean_conta = control_data.groupby("Indexing")['mapping_ratio'].mean().loc[0]
     except KeyError:
         mean_conta = control_data.groupby("Indexing")['mapping_ratio'].mean().loc["ABSENT"]
-    print(mean_conta)
     # std standart deviation of contaminated sample from control virus
     try:
         std_conta = control_data.groupby("Indexing")['mapping_ratio'].std().loc[0]
     except KeyError:
         std_conta = control_data.groupby("Indexing")['mapping_ratio'].std().loc["ABSENT"]
-    print(mean_conta)
     # threshold is (avg+3*std)/2
     t1_threshold = (mean_conta+3*std_conta)/2
     # FIXME What to do is not contamination from control at all, consider all virus as infection ????
@@ -96,10 +98,10 @@ def calculate_threshold(control_data):
     # infection
     mapping_highest_ratio = 1
     
-    return t1_threshold, t2_threshold, t3_threshold, nb_read_limit_conta, mapping_highest_ratio
+    return t1_threshold, t2_threshold, t3_threshold, nb_read_limit_conta, mapping_highest_ratio, control_name
 
 def classify_virus(virus_data, control_data, t1_threshold, t2_threshold, t3_threshold, 
-        nb_read_limit_conta, mapping_highest_ratio):
+        nb_read_limit_conta, mapping_highest_ratio, control_name):
     """
     """
     def reset_bool():
@@ -113,7 +115,6 @@ def classify_virus(virus_data, control_data, t1_threshold, t2_threshold, t3_thre
     list_classification_step1 = []
     list_classification_step2 = []
     list_classification_step3 = []
-
     t1_bool, t2_bool, t3_bool_infection, t3_bool_contamination, is_uncertain, is_infection, is_contamination = reset_bool()
     for element in virus_data.itertuples():
         #T1
@@ -133,12 +134,12 @@ def classify_virus(virus_data, control_data, t1_threshold, t2_threshold, t3_thre
         except ValueError: # RF (reference) or ND (Not enough Data)
             pass
         # store status of current virus for step 1 
-        if t1_bool and t2_bool:
-            is_infection = True
-            list_classification_step1.append("infection")
-        elif t1_bool==False and t2_bool==False:
+        if element.Sample_name in control_name or (t1_bool==False and t2_bool==False):
             is_contamination = True
             list_classification_step1.append("contamination")
+        elif t1_bool and t2_bool:
+            is_infection = True
+            list_classification_step1.append("infection")
         else: 
             is_uncertain = True
             list_classification_step1.append("uncertain")
@@ -166,11 +167,11 @@ def classify_virus(virus_data, control_data, t1_threshold, t2_threshold, t3_thre
             list_classification_step3.append("contamination")
         if is_uncertain:
             #T4 (refinement)
-            if element.Reads_nb_mapped <= nb_read_limit_conta:
-                list_classification_step3.append("contamination")
-                is_uncertain = False
             if element.mapping_ratio == mapping_highest_ratio:
                 list_classification_step3.append("infection")
+                is_uncertain = False
+            elif element.Reads_nb_mapped <= nb_read_limit_conta:
+                list_classification_step3.append("contamination")
                 is_uncertain = False
             if is_uncertain:
                 list_classification_step3.append("uncertain")
@@ -181,14 +182,29 @@ def classify_virus(virus_data, control_data, t1_threshold, t2_threshold, t3_thre
     virus_data["Classification_step_3"] = list_classification_step3
 
     return virus_data
+def write_result(out_dir, file_name_data, virus_data, t1_threshold, t2_threshold, t3_threshold, nb_read_limit_conta, mapping_highest_ratio):
+    """
+    """
+    result_file_name = "Result_" + file_name_data
+    virus_data.to_csv(os.path.join(out_dir, result_file_name), index=False, sep=';', encoding='utf-8')
+    
+    with open(os.path.join(out_dir, result_file_name), 'a') as out_file:
+        out_file.write("\n")
+        out_file.write("t1_threshold;" + str(t1_threshold) + "\n")
+        out_file.write("t2_threshold;" + str(t2_threshold) + "\n")
+        out_file.write("t3_threshold;" + str(t3_threshold) + "\n")
+        out_file.write("nb_read_limit_conta;" + str(nb_read_limit_conta) + "\n")
+        out_file.write("mapping_highest_ratio;" + str(mapping_highest_ratio) + "\n")
+
+
 
 if __name__ == "__main__":
 
     #TODO argparse use argument
-    out_dir = "/mnt/c/Users/johan/OneDrive/Bureau/bioinfo/Wei_virus_test/"
-    file_name_data = "Conta_virus_batch1v2.csv"
+    out_dir = "/mnt/c/Users/johan/OneDrive/Bureau/bioinfo/Wei_virus_test/Standart_virus/"
+    file_name_data = "other_virus_batch2.csv"
     #file_name_control = "Conta_virus_batch1v2_control.csv"
-    file_name_control = "Input_file_control_batch1.csv"
+    file_name_control = "Input_file_control_batch2.csv"
     col_name = ["Virus_detected","Sample_name","Reads_nb_mapped", "deduplication"]
 
     # open input file
@@ -196,10 +212,15 @@ if __name__ == "__main__":
     # add mapping ratio data
     virus_data, control_data = calculate_mapping_ratio(virus_data,control_data)
     # calculate thresshold value from control
-    t1_threshold, t2_threshold, t3_threshold, nb_read_limit_conta, mapping_highest_ratio = calculate_threshold(control_data)
+    t1_threshold, t2_threshold, t3_threshold, nb_read_limit_conta, mapping_highest_ratio, \
+        control_name = calculate_threshold(control_data)
     # make virus classification
     virus_data = classify_virus(virus_data, control_data, t1_threshold, t2_threshold, t3_threshold, 
-        nb_read_limit_conta, mapping_highest_ratio)
+        nb_read_limit_conta, mapping_highest_ratio, control_name)
+
+    # write_result(out_dir, file_name_data, virus_data, t1_threshold, t2_threshold, 
+    #     t3_threshold, nb_read_limit_conta, mapping_highest_ratio)
+        
     print(virus_data)
     print(control_data)
 
