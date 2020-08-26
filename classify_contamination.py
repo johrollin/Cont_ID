@@ -4,8 +4,9 @@
 import argparse
 import os
 import pandas as pd
+import statistics
 
-def open_file(out_dir, file_name_data, file_name_control, col_name):
+def open_file(out_dir, file_name_data, file_name_control, col_name, col_name_control):
     """
     """
     try:
@@ -16,14 +17,13 @@ def open_file(out_dir, file_name_data, file_name_control, col_name):
         virus_data = pd.read_csv(os.path.join(out_dir, file_name_data),
                                 sep=",", header=0, names=col_name,
                                 index_col=False)        
-    col_name.append("Indexing")
     try:
         control_data = pd.read_csv(os.path.join(out_dir, file_name_control),
-                        sep=";", header=0, names=col_name,
+                        sep=";", header=0, names=col_name_control,
                         index_col=False)
     except pd.errors.ParserError:
         control_data = pd.read_csv(os.path.join(out_dir, file_name_control),
-                        sep=",", header=0, names=col_name,
+                        sep=",", header=0, names=col_name_control,
                         index_col=False)
 
     return virus_data, control_data
@@ -58,10 +58,17 @@ def calculate_threshold(control_data):
     calculate threshold value from control
     Get all samplename from control to set target virus to contamination for those sample
     """
+    
+
     control_name = []
+    deduplication_ratio = []
     for el in control_data.itertuples():
         if el.Indexing == 1 or el.Indexing == "PRESENT":
             control_name.append(el.Sample_name)
+        try:
+            deduplication_ratio.append(float(el.deduplication))
+        except ValueError:
+            pass
     ###### T1
     # T1= [nb read >5] + [(Mapped reads Nr./ Hihgest Reads Nr. Per sample in the same run) > ((avg+3*std)/2)]
     # avg is average mapping_ratio of contaminated sample from control virus 
@@ -75,21 +82,28 @@ def calculate_threshold(control_data):
     except KeyError:
         std_conta = control_data.groupby("Indexing")['mapping_ratio'].std().loc["ABSENT"]
     # threshold is (avg+3*std)/2
-    t1_threshold = (mean_conta+3*std_conta)/2
+    #t1_threshold = (mean_conta+3*std_conta)/2
+    # NOTE test other threshold (only when strain ?)
+    t1_threshold = ((mean_conta+3*std_conta))*500
     # FIXME What to do is not contamination from control at all, consider all virus as infection ????
     ######
 
     ###### T2
     #[nb read > (Hihgest Reads Nr. Per sample in the same run/1000)]
     # threshold is Hihgest Reads Nr. Per sample in the same run/1000
-    t2_threshold = int(max(control_data["Reads_nb_mapped"])/1000)
+    #t2_threshold = int(max(control_data["Reads_nb_mapped"])/1000)
+    # NOTE test other threshold (only when strain ?)
+    t2_threshold = int(max(control_data["Reads_nb_mapped"])/500)
     ######
 
     ###### T3
     # [de-duplication rate > X]
     # threshold is X
-    t3_threshold = 75.00
-    #TODO deduce X from control data
+    #t3_threshold = 75.00
+    # deduce X from control data
+    # average control /2
+    t3_threshold = (statistics.mean(deduplication_ratio))/1.5
+    
     ######
 
     ## refinemant threshold
@@ -182,13 +196,21 @@ def classify_virus(virus_data, control_data, t1_threshold, t2_threshold, t3_thre
     virus_data["Classification_step_3"] = list_classification_step3
 
     return virus_data
+
 def write_result(out_dir, file_name_data, virus_data, t1_threshold, t2_threshold, t3_threshold, nb_read_limit_conta, mapping_highest_ratio):
     """
     """
-    result_file_name = "Result_" + file_name_data
-    virus_data.to_csv(os.path.join(out_dir, result_file_name), index=False, sep=';', encoding='utf-8')
+    path = file_name_data.split("/")
+    result_folder_name = os.path.join(out_dir, "Result_" + str(path[0]))
+    file_name = "Result_" + str(path[1])
+    try:
+        os.mkdir(result_folder_name)
+    except FileExistsError:
+        pass
+
+    virus_data.to_csv(os.path.join(result_folder_name, file_name), index=False, sep=';', encoding='utf-8')
     
-    with open(os.path.join(out_dir, result_file_name), 'a') as out_file:
+    with open(os.path.join(result_folder_name, file_name), 'a') as out_file:
         out_file.write("\n")
         out_file.write("t1_threshold;" + str(t1_threshold) + "\n")
         out_file.write("t2_threshold;" + str(t2_threshold) + "\n")
@@ -196,19 +218,12 @@ def write_result(out_dir, file_name_data, virus_data, t1_threshold, t2_threshold
         out_file.write("nb_read_limit_conta;" + str(nb_read_limit_conta) + "\n")
         out_file.write("mapping_highest_ratio;" + str(mapping_highest_ratio) + "\n")
 
+def run_analysis(out_dir, file_name_data, file_name_control, col_name, col_name_control):
 
-
-if __name__ == "__main__":
-
-    #TODO argparse use argument
-    out_dir = "/mnt/c/Users/johan/OneDrive/Bureau/bioinfo/Wei_virus_test/Standart_virus/"
-    file_name_data = "other_virus_batch2.csv"
-    #file_name_control = "Conta_virus_batch1v2_control.csv"
-    file_name_control = "Input_file_control_batch2.csv"
-    col_name = ["Virus_detected","Sample_name","Reads_nb_mapped", "deduplication"]
+    print(file_name_data)
 
     # open input file
-    virus_data, control_data = open_file(out_dir, file_name_data, file_name_control, col_name)
+    virus_data, control_data = open_file(out_dir, file_name_data, file_name_control, col_name, col_name_control)
     # add mapping ratio data
     virus_data, control_data = calculate_mapping_ratio(virus_data,control_data)
     # calculate thresshold value from control
@@ -218,14 +233,34 @@ if __name__ == "__main__":
     virus_data = classify_virus(virus_data, control_data, t1_threshold, t2_threshold, t3_threshold, 
         nb_read_limit_conta, mapping_highest_ratio, control_name)
 
-    # write_result(out_dir, file_name_data, virus_data, t1_threshold, t2_threshold, 
-    #     t3_threshold, nb_read_limit_conta, mapping_highest_ratio)
+    write_result(out_dir, file_name_data, virus_data, t1_threshold, t2_threshold, 
+        t3_threshold, nb_read_limit_conta, mapping_highest_ratio)
         
-    print(virus_data)
-    print(control_data)
-
     print(t1_threshold)
     print(t2_threshold)
     print(t3_threshold)
     print(nb_read_limit_conta)
     print(mapping_highest_ratio)
+
+if __name__ == "__main__":
+
+    #TODO argparse use argument
+    out_dir = "/mnt/c/Users/johan/OneDrive/Bureau/bioinfo/Wei_virus_test/"
+    # BSV strain by strain
+    # file_name_data = "input_file_bsv_strain/Input_file_batch$_bsv_strains.csv"
+    # BSV all strain
+    # file_name_data = "input_file5_strain/Input_file_batch$.csv"
+    # other virus cmv bbmmv bbtv ...
+    file_name_data = "other_virus/other_virus_batch$.csv"
+    
+    file_name_control = "control/Input_file_control_batch$.csv"
+    col_name = ["Virus_detected","Sample_name","Reads_nb_mapped", "deduplication"]
+    col_name_control = ["Virus_detected","Sample_name","Reads_nb_mapped", "deduplication", "Indexing"]
+
+    for i in range(1,5):
+        print( "round: " + str(i))
+        file_name_data2 = file_name_data.replace("$", str(i))
+        file_name_control2 = file_name_control.replace("$", str(i))
+        run_analysis(out_dir, file_name_data2, file_name_control2, col_name, col_name_control)
+
+
