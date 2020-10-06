@@ -131,7 +131,9 @@ def classify_virus(virus_data, control_data, t1_threshold, t2_threshold, t3_thre
         """
         return False, False, False, False, False, False, False
 
-    # TODO ajouter le choix precision analyse
+    # TODO 
+    # case BSV or not (treshold formula)
+    # allow the user to change the formula 
 
     list_classification_step1 = []
     list_classification_step2 = []
@@ -198,9 +200,9 @@ def classify_virus(virus_data, control_data, t1_threshold, t2_threshold, t3_thre
                 list_classification_step3.append("uncertain")
         t1_bool, t2_bool, t3_bool_infection, t3_bool_contamination, is_uncertain, is_infection, is_contamination = reset_bool()
                   
-    virus_data["Classification_step_1"] = list_classification_step1
-    virus_data["Classification_step_2"] = list_classification_step2
-    virus_data["Classification_step_3"] = list_classification_step3
+    virus_data["Confident classification (step1)"] = list_classification_step1
+    virus_data["Standart classification (step2)"] = list_classification_step2
+    virus_data["Total classification (step3)"] = list_classification_step3
 
     return virus_data
 
@@ -219,11 +221,11 @@ def write_result(out_dir, file_name_data, virus_data, t1_threshold, t2_threshold
     
     with open(os.path.join(result_folder_name, file_name), 'a') as out_file:
         out_file.write("\n")
-        out_file.write("t1_threshold;" + str(t1_threshold) + "\n")
-        out_file.write("t2_threshold;" + str(t2_threshold) + "\n")
-        out_file.write("t3_threshold;" + str(t3_threshold) + "\n")
-        out_file.write("nb_read_limit_conta;" + str(nb_read_limit_conta) + "\n")
-        out_file.write("mapping_highest_ratio;" + str(mapping_highest_ratio) + "\n")
+        out_file.write("mapping ratio threshold (step1 t1);" + str(t1_threshold) + "\n")
+        out_file.write("reads_nb_mapped threshold (step1 t2);" + str(t2_threshold) + "\n")
+        out_file.write("deduplication threshold (step2 t3);" + str(t3_threshold) + "\n")
+        out_file.write("nb_read_limit_conta (step3 t4_1);" + str(nb_read_limit_conta) + "\n")
+        out_file.write("mapping_highest_ratio (step3 t4_2);" + str(mapping_highest_ratio) + "\n")
 
 def run_analysis(out_dir, file_name_data, file_name_control, col_name, col_name_control):
 
