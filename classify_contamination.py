@@ -74,18 +74,25 @@ def calculate_threshold(control_data):
     # avg is average mapping_ratio of contaminated sample from control virus 
     try:
         mean_conta = control_data.groupby("Indexing")['mapping_ratio'].mean().loc[0]
-    except KeyError:
-        mean_conta = control_data.groupby("Indexing")['mapping_ratio'].mean().loc["ABSENT"]
+    except TypeError:
+        try:
+            mean_conta = control_data.groupby("Indexing")['mapping_ratio'].mean().loc["ABSENT"]
+        except KeyError:
+            print("No contamination found in external control, you can be confident that you don't have cross-contamination")
+            exit(0)
     # std standart deviation of contaminated sample from control virus
     try:
         std_conta = control_data.groupby("Indexing")['mapping_ratio'].std().loc[0]
-    except KeyError:
-        std_conta = control_data.groupby("Indexing")['mapping_ratio'].std().loc["ABSENT"]
-    # threshold is (avg+3*std)/2
+    except TypeError:
+        try:
+            std_conta = control_data.groupby("Indexing")['mapping_ratio'].std().loc["ABSENT"]
+        except KeyError:
+            print("No contamination found in external control, you can be confident that you don't have cross-contamination")
+            exit(0)
+            # threshold is (avg+3*std)/2
     #t1_threshold = (mean_conta+3*std_conta)/2
     # NOTE test other threshold (only when strain ?)
     t1_threshold = ((mean_conta+3*std_conta))*500
-    # FIXME What to do is not contamination from control at all, consider all virus as infection ????
     ######
 
     ###### T2
@@ -251,16 +258,21 @@ if __name__ == "__main__":
     # BSV all strain
     # file_name_data = "input_file5_strain/Input_file_batch$.csv"
     # other virus cmv bbmmv bbtv ...
-    file_name_data = "other_virus/other_virus_batch$.csv"
+
+    # file_name_data = "other_virus/other_virus_batch$.csv"
     
-    file_name_control = "control/Input_file_control_batch$.csv"
+    # file_name_control = "control/Input_file_control_batch$.csv"
     col_name = ["Virus_detected","Sample_name","Reads_nb_mapped", "deduplication"]
     col_name_control = ["Virus_detected","Sample_name","Reads_nb_mapped", "deduplication", "Indexing"]
 
-    for i in range(1,5):
-        print( "round: " + str(i))
-        file_name_data2 = file_name_data.replace("$", str(i))
-        file_name_control2 = file_name_control.replace("$", str(i))
-        run_analysis(out_dir, file_name_data2, file_name_control2, col_name, col_name_control)
+    # for i in range(1,5):
+    #     print( "round: " + str(i))
+    #     file_name_data2 = file_name_data.replace("$", str(i))
+    #     file_name_control2 = file_name_control.replace("$", str(i))
+    #     run_analysis(out_dir, file_name_data2, file_name_control2, col_name, col_name_control)
 
 
+    file_name_control = "control/Input_file_control_batch1.csv"
+    file_name_data = "input_file5_strain/Input_file_batch1.csv"
+
+    run_analysis(out_dir, file_name_data, file_name_control, col_name, col_name_control)
