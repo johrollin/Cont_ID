@@ -96,6 +96,8 @@ def calculate_threshold(control_data, count):
     
     #  ((avg+3*std)/threshold_case)
     t1_threshold = (mean_conta+3*std_conta)/float(current_divider[0])
+    if t1_threshold > 1 :
+        t1_threshold = 1
     # t1_threshold = ((mean_conta+3*std_conta))*500
     ######
 
@@ -110,7 +112,7 @@ def calculate_threshold(control_data, count):
     ###### T3
     # [de-duplication rate > X]
     # threshold is X
-    #t3_threshold = 75.00
+    # t3_threshold = 75.00
     # deduce X from control data
     # average control/threshold_case
     t3_threshold = (statistics.mean(deduplication_ratio))/float(current_divider[2])
@@ -118,12 +120,27 @@ def calculate_threshold(control_data, count):
     ######
 
     ## refinement threshold
-    # conta
-    nb_read_limit_conta = 5
-    # infection
-    mapping_highest_ratio = 1
+    # conta 5
+    nb_read_limit_conta = int(current_divider[3])
+    # infection 1
+    mapping_highest_ratio = int(current_divider[4])
     
     return t1_threshold, t2_threshold, t3_threshold, nb_read_limit_conta, mapping_highest_ratio, control_name
+
+def check_comment(list_classification_comment, element, control_name, is_infection, is_contamination, t1_threshold):
+    """
+    """
+    #col_name = ["Virus_detected","Sample_name","Sample ID","Reads_nb_mapped", "deduplication"]
+    msg = "" 
+    if element.Sample_name in control_name and is_infection:
+        msg += "The sample use for control has another virus labeled as infectious (consider using external control or changing threshold) "
+    if element.Reads_nb_mapped <= 5 and is_infection:
+        msg += "This infectious label is with less than 5 reads, the result validity is doubtful "
+    if element.mapping_ratio == 1 and is_contamination:
+        msg += "Contamination with a mapping ratio of 1, the result validity is doubtful "
+
+    list_classification_comment.append(msg)
+    return list_classification_comment
 
 def classify_virus(virus_data, control_data, t1_threshold, t2_threshold, t3_threshold, 
         nb_read_limit_conta, mapping_highest_ratio, control_name):
@@ -142,9 +159,12 @@ def classify_virus(virus_data, control_data, t1_threshold, t2_threshold, t3_thre
     list_classification_step1 = []
     list_classification_step2 = []
     list_classification_step3 = []
+    list_classification_comment = []
     t1_bool, t2_bool, t3_bool_infection, t3_bool_contamination, is_uncertain, is_infection, is_contamination = reset_bool()
     for element in virus_data.itertuples():
         #T1
+        #True => infection
+        #False => contamination
         if element.mapping_ratio >= t1_threshold:
             t1_bool=True
         #T2
@@ -161,7 +181,7 @@ def classify_virus(virus_data, control_data, t1_threshold, t2_threshold, t3_thre
         except ValueError: # RF (reference) or ND (Not enough Data)
             pass
         # store status of current virus for step 1 
-        if element.Sample_name in control_name or (t1_bool==False and t2_bool==False):
+        if t1_bool==False and t2_bool==False:
             is_contamination = True
             list_classification_step1.append("contamination")
         elif t1_bool and t2_bool:
@@ -171,6 +191,13 @@ def classify_virus(virus_data, control_data, t1_threshold, t2_threshold, t3_thre
             is_uncertain = True
             list_classification_step1.append("uncertain")
         # store status of current virus for step 2
+        #TODO
+        #Remove these line after the end of the test
+        is_uncertain = True
+        is_infection = False
+        is_contamination = False
+        #Remove these line after the end of the test
+
         if is_infection:
             list_classification_step2.append("infection")
         if is_contamination:
@@ -196,17 +223,24 @@ def classify_virus(virus_data, control_data, t1_threshold, t2_threshold, t3_thre
             #T4 (refinement)
             if element.mapping_ratio == mapping_highest_ratio:
                 list_classification_step3.append("infection")
+                is_infection = True
                 is_uncertain = False
             elif element.Reads_nb_mapped <= nb_read_limit_conta:
                 list_classification_step3.append("contamination")
+                is_contamination = True
                 is_uncertain = False
             if is_uncertain:
                 list_classification_step3.append("uncertain")
+                print("unexpected case")
+
+        list_classification_comment = check_comment(list_classification_comment, element, control_name, is_infection, is_contamination, t1_threshold)
         t1_bool, t2_bool, t3_bool_infection, t3_bool_contamination, is_uncertain, is_infection, is_contamination = reset_bool()
+
                   
     virus_data["Confident classification (step1)"] = list_classification_step1
     virus_data["Standart classification (step2)"] = list_classification_step2
     virus_data["Total classification (step3)"] = list_classification_step3
+    virus_data["Comment"] = list_classification_comment
 
     return virus_data
 
@@ -233,14 +267,20 @@ t2_threshold, t3_threshold, nb_read_limit_conta, mapping_highest_ratio, count):
     current_divider = current_case.split(":")
     with open(os.path.join(result_folder_name, file_name), 'a') as out_file:
         out_file.write("\n")
-        out_file.write("mapping ratio threshold (step1 t1); ((avg+3*std)/" \
-             + current_divider[0] + ";" + str(t1_threshold) + "\n")
+        if t1_threshold == 1 :
+            out_file.write("mapping ratio threshold (step1 t1); ((avg+3*std)/" \
+                + current_divider[0] + "; WARNING this threshold was ineffective as you don't have enough contamination in your control ; " + str(t1_threshold) + "\n")
+        else:
+            out_file.write("mapping ratio threshold (step1 t1); ((avg+3*std)/" \
+                + current_divider[0] + ";" + str(t1_threshold) + "\n")
         out_file.write("reads_nb_mapped threshold (step1 t2); Hihgest Reads Nr. \
              Per sample in the same run/" + current_divider[1] + ";" + str(t2_threshold) + "\n")
         out_file.write("deduplication threshold (step2 t3); ((avg(deduplication_ratio))/"\
              + current_divider[2] + ";" + str(t3_threshold) + "\n")
         out_file.write("nb_read_limit_conta (step3 t4_1); read_number ;" + str(nb_read_limit_conta) + "\n")
         out_file.write("mapping_highest_ratio (step3 t4_2); highest mapping ratio ;" + str(mapping_highest_ratio) + "\n")
+
+
 
 def run_analysis(out_dir, file_name_data, file_name_control, col_name, col_name_control, threshold):
 
@@ -288,7 +328,7 @@ if __name__ == "__main__":
     
     # file_name_control = "control/Input_file_control_batch$.csv"
     col_name = ["Virus_detected","Sample_name","Sample ID","Reads_nb_mapped", "deduplication"]
-    col_name_control = ["Virus_detected","Sample_name","Sample ID","Reads_nb_mapped", "deduplication", "Indexing"]
+    col_name_control = ["Virus_detected","Sample_name","492","Reads_nb_mapped", "deduplication", "Indexing"]
     
 
     # for i in range(1,5):
@@ -297,16 +337,18 @@ if __name__ == "__main__":
     #     file_name_control2 = file_name_control.replace("$", str(i))
     #     run_analysis(out_dir, file_name_data2, file_name_control2, col_name, col_name_control)
 
-    out_dir = "/mnt/c/Users/johan/OneDrive/Bureau/bioinfo/Wei_virus_test/Key_sample/banana_nonbsv/"
-    file_name_control = "Input_file_control_batch_smallrna.csv"
-    file_name_data = "other_virus_batch_smallrna.csv"
+    out_dir = "/mnt/c/Users/johan/OneDrive/Bureau/bioinfo/Wei_virus_test/Key_sample/all_banana_data_V2/"
+    file_name_control = "control_batch5.csv"
+    file_name_data = "Input_file_batch5_bsv_strains.csv"
+    #file_name_data = "other_virus_batch5.csv"
+
     threshold = "all"
     # threshold_case = ["2:1000:1.5"]
-    # T1 will be divide by 2
+    # T1 will be divide by 2 
     # T2 divide by 1000
     # T3 divide by 1.5
     # ["2:1000:1.5",            "0.002:500:1.5"]
     #  'standart' banana virus, integrated banana virus 
     global threshold_case 
-    threshold_case = ["2:1000:1.5", "0.002:500:1.5"]
+    threshold_case = ["2:1000:1.5:5:1", "0.002:500:1.5:5:1"]
     run_analysis(out_dir, file_name_data, file_name_control, col_name, col_name_control, threshold)
