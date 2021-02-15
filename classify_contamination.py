@@ -152,10 +152,6 @@ def classify_virus(virus_data, control_data, t1_threshold, t2_threshold, t3_thre
         """
         return False, False, False, False, False, False, False
 
-    # TODO 
-    # case BSV or not (treshold formula)
-    # allow the user to change the formula 
-
     list_classification_step1 = []
     list_classification_step2 = []
     list_classification_step3 = []
@@ -193,9 +189,9 @@ def classify_virus(virus_data, control_data, t1_threshold, t2_threshold, t3_thre
         # store status of current virus for step 2
         #TODO
         #Remove these line after the end of the test
-        is_uncertain = True
-        is_infection = False
-        is_contamination = False
+        # is_uncertain = True
+        # is_infection = False
+        # is_contamination = False
         #Remove these line after the end of the test
 
         if is_infection:
@@ -252,7 +248,7 @@ t2_threshold, t3_threshold, nb_read_limit_conta, mapping_highest_ratio, count):
     result_name = file_name_data.split(".")
     result_folder_name = os.path.join(out_dir, "result_" + str(result_name[0]))
     if len(path)>1: # control/Input_file_control_batch6.csv
-        file_name = "Result_" + "_threshold_case_" + str(count+1) + "_" + str(path[1])
+        file_name = "Result_" + "_threshold_case_" + str(count+1) + "_" + str(path[1] )
     else: #Input_file_control_batch6.csv
         file_name = "Result_" + "_threshold_case_" + str(count+1) + "_" + str(path[0])
     try:
@@ -337,10 +333,9 @@ if __name__ == "__main__":
     #     file_name_control2 = file_name_control.replace("$", str(i))
     #     run_analysis(out_dir, file_name_data2, file_name_control2, col_name, col_name_control)
 
-    out_dir = "/mnt/c/Users/johan/OneDrive/Bureau/bioinfo/Wei_virus_test/Key_sample/all_banana_data_V2/"
-    file_name_control = "control_batch5.csv"
-    file_name_data = "Input_file_batch5_bsv_strains.csv"
-    #file_name_data = "other_virus_batch5.csv"
+    out_dir = "/mnt/c/Users/johan/OneDrive/Bureau/bioinfo/Wei_virus_test/Key_sample/Australian_sample/"
+    file_name_control = "Input_file_control_3_20012021.csv"
+    file_name_data = "Tested_virus_file_3_20012021.csv"
 
     threshold = "all"
     # threshold_case = ["2:1000:1.5"]
