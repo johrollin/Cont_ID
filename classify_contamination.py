@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Script for running cross-contamination analysis."""
+"""Script to run cross-contamination analysis."""
 
 import argparse
 import os
