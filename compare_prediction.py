@@ -22,8 +22,13 @@ def write_result(out_dir_res_towrite, filename, batch_data, dic_result_stat, thr
         for el in threshold_used_data.itertuples():
             out_file.write(str(el.Virus_detected) + ";" + str(el.Sample_name) + ";" + str(el.Sample_ID) + "\n")
         out_file.write("\n") 
-        for key, value in dic_result_stat.items():
-            out_file.write(str(key) + ";" + str(value) + "\n")
+        list_metric = ["step1_correct", "step1_uncertain", "step1_wrong", "step2_correct", "step2_uncertain", \
+            "step2_wrong", "step3_correct", "step3_wrong", "all_correct", "all_wrong"]
+        for el in list_metric:
+            out_file.write(str(el) + ";" + str(dic_result_stat[el][0]) + ";" + str(dic_result_stat[el][1]) + "\n")
+
+        # for key, value in dic_result_stat.items():
+        #     out_file.write(str(key) + ";" + str(value[0]) + ";" + str(value[1]) + "\n")
 
 
 
@@ -77,20 +82,30 @@ def make_comparison(out_dir_res, filename, col_name, index_data, out_dir_res_tow
 
     batch_data["index_status"] = list_index_status
 
-    count_step1_wrong = total_class_nb - (count_step1_correct + count_step1_uncertain)
     count_step2_wrong = total_class_nb- (count_step2_correct + count_step2_uncertain)
-    count_step3_correct = count_correct - count_step2_correct
-    count_step3_wrong = count_wrong - count_step2_wrong
-    dic_result_stat = {"step1_correct":count_step1_correct, 
-    "step2_correct":count_step2_correct,
-    "step1_uncertain":count_step1_uncertain,
-    "step2_uncertain":count_step2_uncertain,
-    "step1_wrong":count_step1_wrong,
-    "step2_wrong":count_step2_wrong,
-    "step3_correct":count_step3_correct,
-    "step3_wrong":count_step3_wrong,
-    "all_correct":count_correct,
-    "all_wrong":count_wrong,}
+    count_step1_wrong = total_class_nb - (count_step1_correct + count_step1_uncertain)
+    count_step3_correct = count_correct
+    count_step3_wrong = count_wrong
+
+    new_count_step1_correct = "+" + str(count_step1_correct)
+    new_count_step1_uncertain = "+" + str(count_step1_uncertain)
+    new_count_step1_wrong = "+" + str(count_step1_wrong)
+    new_count_step2_correct = "+" + str(count_step2_correct - count_step1_correct)
+    new_count_step2_uncertain = "-" + str(count_step1_uncertain - count_step2_uncertain)
+    new_count_step2_wrong = "+" + str(count_step2_wrong - count_step1_wrong)
+    new_count_step3_wrong = "+" + str(count_wrong - count_step2_wrong)
+    new_count_step3_correct = "+" + str(count_correct - count_step2_correct)
+
+    dic_result_stat = {"step1_correct":[count_step1_correct,new_count_step1_correct], 
+    "step2_correct":[count_step2_correct,new_count_step2_correct],
+    "step1_uncertain":[count_step1_uncertain,new_count_step1_uncertain],
+    "step2_uncertain":[count_step2_uncertain,new_count_step2_uncertain],
+    "step1_wrong":[count_step1_wrong,new_count_step1_wrong],
+    "step2_wrong":[count_step2_wrong,new_count_step2_wrong],
+    "step3_correct":[count_step3_correct,new_count_step3_correct],
+    "step3_wrong":[count_step3_wrong,new_count_step3_wrong],
+    "all_correct":[count_correct,""],
+    "all_wrong":[count_wrong,""]}
     
     threshold_used_data = pd.read_csv(os.path.join(out_dir_res, filename), sep=";", engine='python', names=col_name, skiprows=total_class_nb+1)
     
@@ -178,9 +193,9 @@ def run_simple_comparison(batch_file_list, out_dir_index, out_dir_res, out_dir_r
 if __name__ == "__main__":
 
 
-    out_dir_res = "/mnt/c/Users/johan/OneDrive/Bureau/bioinfo/Wei_virus_test/Key_sample/Human_data/Result2/"
-    out_dir_index = "/mnt/c/Users/johan/OneDrive/Bureau/bioinfo/Wei_virus_test/Key_sample/Human_data/indexing2/"
-    out_dir_res_towrite = "/mnt/c/Users/johan/OneDrive/Bureau/bioinfo/Wei_virus_test/Key_sample/Human_data/Result_analysis/"
+    out_dir_res = "/mnt/c/Users/johan/OneDrive/Bureau/bioinfo/Wei_virus_test/Key_sample/Human_data_V2/Result2/"
+    out_dir_index = "/mnt/c/Users/johan/OneDrive/Bureau/bioinfo/Wei_virus_test/Key_sample/Human_data_V2/indexing2/"
+    out_dir_res_towrite = "/mnt/c/Users/johan/OneDrive/Bureau/bioinfo/Wei_virus_test/Key_sample/Human_data_V2/Result_analysis2/"
     batch_file_list = []
     filename_list = os.listdir(out_dir_res)
     for filename in filename_list:

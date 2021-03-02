@@ -136,7 +136,8 @@ def calculate_threshold(control_data, count):
         if el.Indexing == 1 or el.Indexing == "PRESENT":
             control_name.append(el.Sample_name)
         try:
-            deduplication_ratio.append(float(el.deduplication))
+            if not pd.isna(el.deduplication):
+                deduplication_ratio.append(float(el.deduplication))
         except ValueError:
             pass
 
@@ -187,7 +188,6 @@ def calculate_threshold(control_data, count):
     # deduce X from control data
     # average control/threshold_case
     t3_threshold = (statistics.mean(deduplication_ratio))/float(current_divider[2])
-    
     ######
 
     ## refinement threshold
@@ -363,8 +363,6 @@ t2_threshold, t3_threshold, nb_read_limit_conta, mapping_highest_ratio, count, s
 
 def run_analysis(out_dir, file_name_data, file_name_control, col_name, col_name_control, threshold, standardisation):
 
-    print(file_name_data)
-
     # open input file
     virus_data, control_data = open_file(out_dir, file_name_data, file_name_control, col_name, col_name_control)
     # add mapping ratio data
@@ -422,7 +420,7 @@ if __name__ == "__main__":
     col_name = ["Virus_detected","Sample_name","Sample ID","Reads_nb_mapped", "deduplication", "Total_Reads_Nr"]
     col_name_control = ["Virus_detected","Sample_name","Sample ID","Reads_nb_mapped", "deduplication", "Total_Reads_Nr", "Indexing"]
     
-    out_dir = "/mnt/c/Users/johan/OneDrive/Bureau/bioinfo/Wei_virus_test/Key_sample/Human_data/"
+    out_dir = "/mnt/c/Users/johan/OneDrive/Bureau/bioinfo/Wei_virus_test/Key_sample/Human_data_test/"
 
 
 
@@ -437,8 +435,8 @@ if __name__ == "__main__":
     global threshold_case 
     threshold_case = ["2:1000:1.5:5:1", "0.002:500:1.5:5:1"]
 
-    file_name_control = "control_human_data_MV.csv"
-    file_name_data = "Input_file_human_control_MV.csv"
+    file_name_control = "control_human_data_MS2.csv"
+    file_name_data = "Input_file_human_control_MS2.csv"
     run_analysis(out_dir, file_name_data, file_name_control, col_name, col_name_control, threshold, standardisation)
 
     # list_name_control = []
