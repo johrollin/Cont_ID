@@ -26,9 +26,11 @@ def open_file(out_dir, file_name_data, file_name_control, col_name, col_name_con
                         sep=",", header=0, names=col_name_control,
                         index_col=False)
 
+    virus_data = virus_data.drop(virus_data.index[pd.isna(virus_data["Virus_detected"])])
+    control_data = control_data.drop(control_data.index[pd.isna(control_data["Virus_detected"])])
     return virus_data, control_data
 
-def calculate_mapping_ratio(virus_data,control_data, col_name):
+def calculate_mapping_ratio(virus_data,control_data, col_name, standardisation):
     """
     Calculate Mapped reads Nr./ Hihgest Reads Nr. Per sample in the same batch (for same virus)
 
@@ -41,8 +43,9 @@ def calculate_mapping_ratio(virus_data,control_data, col_name):
     max_read_nb = max(control_data["Reads_nb_mapped"])
     row = control_data.iloc[control_data['Reads_nb_mapped'].idxmax()]
     total_read_nb_ref = row["Total_Reads_Nr"]
+    standardisation = int(standardisation)
 
-    standardize_max_read_nb = (max_read_nb*1000000)/total_read_nb_ref
+    standardize_max_read_nb = (max_read_nb*standardisation)/total_read_nb_ref
 
     #calculate mapping ratio for control (and standardize) 
     for element in control_data.itertuples():
@@ -50,7 +53,7 @@ def calculate_mapping_ratio(virus_data,control_data, col_name):
         ratio = native_reads_nb_mapped/max_read_nb
         list_mapping_ratio_control.append(ratio)
 
-        standardize_reads_nb_mapped = (native_reads_nb_mapped*1000000)/element.Total_Reads_Nr
+        standardize_reads_nb_mapped = (native_reads_nb_mapped*standardisation)/element.Total_Reads_Nr
         standardize_ratio= standardize_reads_nb_mapped/standardize_max_read_nb
         standardize_list_mapping_ratio_control.append(standardize_ratio)
 
@@ -60,7 +63,7 @@ def calculate_mapping_ratio(virus_data,control_data, col_name):
 
     #calculate mapping ratio for data (and standardize)
     for el in virus_data.itertuples():
-        standardize_reads_nb_mapped = (el.Reads_nb_mapped*1000000)/el.Total_Reads_Nr
+        standardize_reads_nb_mapped = (el.Reads_nb_mapped*standardisation)/el.Total_Reads_Nr
         standardize_list_reads_nb_mapped.append(standardize_reads_nb_mapped)
     virus_data["standardize_reads_nb_mapped"] = standardize_list_reads_nb_mapped
     standardize_serie_virus_read = virus_data.groupby("Virus_detected")['standardize_reads_nb_mapped'].max()
@@ -83,7 +86,7 @@ def calculate_mapping_ratio(virus_data,control_data, col_name):
 
     return virus_data, control_data
 
-def calculate_standardize_threshold(control_data, count):
+def calculate_standardize_threshold(control_data, count, standardisation):
     """
     calculate standardized threshold value from control for step 1
     """
@@ -92,22 +95,17 @@ def calculate_standardize_threshold(control_data, count):
     current_divider = current_case.split(":")
     ###### T1
     try:
-        mean_conta = control_data.groupby("Indexing")['standardize_mapping_ratio'].mean().loc[0]
-    except TypeError:
-        try:
-            mean_conta = control_data.groupby("Indexing")['standardize_mapping_ratio'].mean().loc["ABSENT"]
-        except KeyError:
-            print("No contamination found in external control, you can be confident that you don't have cross-contamination")
-            exit(0)
+        mean_conta = control_data.groupby("Indexing")['standardize_mapping_ratio'].mean().loc["ABSENT"]
+    except KeyError:
+        print("No contamination found in external control, you can be confident that you don't have cross-contamination")
+        exit(0)
     # std standart deviation of contaminated sample from control virus
     try:
-        std_conta = control_data.groupby("Indexing")['standardize_mapping_ratio'].std().loc[0]
-    except TypeError:
-        try:
-            std_conta = control_data.groupby("Indexing")['standardize_mapping_ratio'].std().loc["ABSENT"]
-        except KeyError:
-            print("No contamination found in external control, you can be confident that you don't have cross-contamination")
-            exit(0)
+        std_conta = control_data.groupby("Indexing")['standardize_mapping_ratio'].std().loc["ABSENT"]
+    except KeyError:
+        print("No contamination found in external control, you can be confident that you don't have cross-contamination")
+        exit(0)
+
     standardize_t1_threshold = (mean_conta+3*std_conta)/float(current_divider[0])
     if standardize_t1_threshold > 1 :
         standardize_t1_threshold = 1
@@ -117,13 +115,13 @@ def calculate_standardize_threshold(control_data, count):
     max_read_nb = max(control_data["Reads_nb_mapped"])
     row = control_data.iloc[control_data['Reads_nb_mapped'].idxmax()]
     total_read_nb_ref = row["Total_Reads_Nr"]
-    standardize_max_read_nb = (max_read_nb*1000000)/total_read_nb_ref
+    standardize_max_read_nb = (max_read_nb*int(standardisation))/total_read_nb_ref
     standardize_t2_threshold = int(standardize_max_read_nb/float(current_divider[1]))
     ######
 
     return standardize_t1_threshold, standardize_t2_threshold
 
-def calculate_threshold(control_data, count):
+def calculate_threshold(control_data, count, standardisation):
     """
     calculate threshold value from control
     Get all samplename from control to set target virus to contamination for those sample
@@ -143,43 +141,8 @@ def calculate_threshold(control_data, count):
 
     current_case = threshold_case[count]
     current_divider = current_case.split(":")
-    ###### T1
-    # T1= [nb read >5] + [(Mapped reads Nr./ Hihgest Reads Nr. Per sample in the same run) > ((avg+3*std)/2)]
-    # avg is average mapping_ratio of contaminated sample from control virus 
-    try:
-        mean_conta = control_data.groupby("Indexing")['mapping_ratio'].mean().loc[0]
-    except TypeError:
-        try:
-            mean_conta = control_data.groupby("Indexing")['mapping_ratio'].mean().loc["ABSENT"]
-        except KeyError:
-            print("No contamination found in external control, you can be confident that you don't have cross-contamination")
-            exit(0)
-    # std standart deviation of contaminated sample from control virus
-    try:
-        std_conta = control_data.groupby("Indexing")['mapping_ratio'].std().loc[0]
-    except TypeError:
-        try:
-            std_conta = control_data.groupby("Indexing")['mapping_ratio'].std().loc["ABSENT"]
-        except KeyError:
-            print("No contamination found in external control, you can be confident that you don't have cross-contamination")
-            exit(0)
-            # threshold is (avg+3*std)/2
-    
-    #  ((avg+3*std)/threshold_case)
-    t1_threshold = (mean_conta+3*std_conta)/float(current_divider[0])
-    if t1_threshold > 1 :
-        t1_threshold = 1
-    # t1_threshold = ((mean_conta+3*std_conta))*500
-    ######
 
-    ###### T2
-    #[nb read > (Hihgest Reads Nr. Per sample in the same run/1000)]
-    # threshold is Hihgest Reads Nr. Per sample in the same run/threshold_case
-    t2_threshold = int(max(control_data["Reads_nb_mapped"])/float(current_divider[1]))
-    # NOTE test other threshold (only when strain ?)
-    # t2_threshold = int(max(control_data["Reads_nb_mapped"])/500)
-    ######
-    standardize_t1_threshold, standardize_t2_threshold = calculate_standardize_threshold(control_data, count)
+    standardize_t1_threshold, standardize_t2_threshold = calculate_standardize_threshold(control_data, count, standardisation)
 
     ###### T3
     # [de-duplication rate > X]
@@ -196,7 +159,7 @@ def calculate_threshold(control_data, count):
     # infection 1
     mapping_highest_ratio = int(current_divider[4])
     
-    return standardize_t1_threshold, standardize_t2_threshold, t1_threshold, t2_threshold, t3_threshold, nb_read_limit_conta, mapping_highest_ratio, control_name
+    return standardize_t1_threshold, standardize_t2_threshold, t3_threshold, nb_read_limit_conta, mapping_highest_ratio, control_name
 
 def check_comment(list_classification_comment, element, control_name, is_infection, is_contamination, t1_threshold):
     """
@@ -214,7 +177,7 @@ def check_comment(list_classification_comment, element, control_name, is_infecti
     return list_classification_comment
 
 def classify_virus(virus_data, control_data, t1_threshold, t2_threshold, t3_threshold, 
-        nb_read_limit_conta, mapping_highest_ratio, control_name, standartisation):
+        nb_read_limit_conta, mapping_highest_ratio, control_name):
     """
     """
     def reset_bool():
@@ -232,18 +195,12 @@ def classify_virus(virus_data, control_data, t1_threshold, t2_threshold, t3_thre
         #T1
         #True => infection
         #False => contamination
-        if standartisation: 
-            if element.standardize_mapping_ratio >= t1_threshold:
-                t1_bool=True
-            #T2
-            if element.standardize_reads_nb_mapped >= t2_threshold:
-                t2_bool=True
-        else:
-            if element.mapping_ratio >= t1_threshold:
-                t1_bool=True
-            #T2
-            if element.Reads_nb_mapped >= t2_threshold:
-                t2_bool=True
+        if element.standardize_mapping_ratio >= t1_threshold:
+            t1_bool=True
+        #T2
+        if element.standardize_reads_nb_mapped >= t2_threshold:
+            t2_bool=True
+        
         #T3
         try:
             deduplication_ratio = float(element.deduplication)
@@ -325,15 +282,12 @@ t2_threshold, t3_threshold, nb_read_limit_conta, mapping_highest_ratio, count, s
     path = file_name_data.split("/")
     result_name = file_name_data.split(".")
     #result_folder_name = os.path.join(out_dir, "result_" + str(result_name[0]))
-    result_folder_name = os.path.join(out_dir, "Result")
-    if standardisation:
-        str_standard = "standart_"
-    else:
-        str_standard = ""
+    result_folder_name = os.path.join(out_dir, "Result_test")
+
     if len(path)>1: # control/Input_file_control_batch6.csv
-        file_name = "Result_" + "_threshold_case_" + str(count+1) + "_" + str_standard + str(path[1] )
+        file_name = "Result_" + "_threshold_case_" + str(count+1) + "_" + str(path[1] )
     else: #Input_file_control_batch6.csv
-        file_name = "Result_" + "_threshold_case_" + str(count+1) + "_" + str_standard + str(path[0])
+        file_name = "Result_" + "_threshold_case_" + str(count+1) + "_" + str(path[0])
     try:
         os.mkdir(result_folder_name)
     except FileExistsError:
@@ -358,6 +312,8 @@ t2_threshold, t3_threshold, nb_read_limit_conta, mapping_highest_ratio, count, s
              + current_divider[2] + ";" + str(t3_threshold) + "\n")
         out_file.write("#nb_read_limit_conta (step3 t4_1); read_number ;" + str(nb_read_limit_conta) + "\n")
         out_file.write("#mapping_highest_ratio (step3 t4_2); highest mapping ratio ;" + str(mapping_highest_ratio) + "\n")
+        out_file.write("#standardisation number ;" + str(standardisation) + "\n")
+        
 
 
 
@@ -366,25 +322,18 @@ def run_analysis(out_dir, file_name_data, file_name_control, col_name, col_name_
     # open input file
     virus_data, control_data = open_file(out_dir, file_name_data, file_name_control, col_name, col_name_control)
     # add mapping ratio data
-    virus_data, control_data = calculate_mapping_ratio(virus_data,control_data, col_name)
+    virus_data, control_data = calculate_mapping_ratio(virus_data,control_data, col_name, standardisation)
     count = 0
     for element in threshold_case:
         # calculate thresshold value from control
-        standardize_t1_threshold, standardize_t2_threshold, t1_threshold, t2_threshold, t3_threshold, \
-            nb_read_limit_conta, mapping_highest_ratio, control_name = calculate_threshold(control_data, count)
+        standardize_t1_threshold, standardize_t2_threshold, t3_threshold, \
+            nb_read_limit_conta, mapping_highest_ratio, control_name = calculate_threshold(control_data, count, standardisation)
         # make virus classification
-        virus_data = classify_virus(virus_data, control_data, t1_threshold, t2_threshold, t3_threshold, 
-            nb_read_limit_conta, mapping_highest_ratio, control_name, False)
+        virus_data = classify_virus(virus_data, control_data, standardize_t1_threshold, standardize_t2_threshold, t3_threshold, 
+            nb_read_limit_conta, mapping_highest_ratio, control_name)
 
-        write_result(out_dir, file_name_data, virus_data, t1_threshold, t2_threshold, 
-            t3_threshold, nb_read_limit_conta, mapping_highest_ratio, count, False)
-
-        if standardisation:
-            virus_data = classify_virus(virus_data, control_data, standardize_t1_threshold, standardize_t2_threshold, t3_threshold, 
-                nb_read_limit_conta, mapping_highest_ratio, control_name, standardisation)
-
-            write_result(out_dir, file_name_data, virus_data, standardize_t1_threshold, standardize_t2_threshold, 
-                t3_threshold, nb_read_limit_conta, mapping_highest_ratio, count, standardisation)
+        write_result(out_dir, file_name_data, virus_data, standardize_t1_threshold, standardize_t2_threshold, 
+            t3_threshold, nb_read_limit_conta, mapping_highest_ratio, count, standardisation)
         count += 1
     
 if __name__ == "__main__":
@@ -402,11 +351,8 @@ if __name__ == "__main__":
     col_name = ["Virus_detected","Sample_name","Sample ID","Reads_nb_mapped", "deduplication", "Total_Reads_Nr"]
     col_name_control = ["Virus_detected","Sample_name","Sample ID","Reads_nb_mapped", "deduplication", "Total_Reads_Nr", "Indexing"]
     
-    out_dir = "/mnt/c/Users/johan/OneDrive/Bureau/bioinfo/Wei_virus_test/Key_sample/Human_data_test/"
-
-
-
-    standardisation = True
+    out_dir = "/mnt/c/Users/johan/OneDrive/Bureau/bioinfo/Wei_virus_test/Key_sample/Human_data_V2/"
+    standardisation = 5000000
     # threshold_case = ["2:1000:1.5"]
     # T1 will be divide by 2 
     # T2 divide by 1000
@@ -415,9 +361,9 @@ if __name__ == "__main__":
     #  'standart' banana virus, integrated banana virus 
     global threshold_case 
     threshold_case = ["2:1000:1.5:5:1", "0.002:500:1.5:5:1"]
-
     file_name_control = "control_human_data_MS2.csv"
     file_name_data = "Input_file_human_control_MS2.csv"
+
     run_analysis(out_dir, file_name_data, file_name_control, col_name, col_name_control, standardisation)
 
     # list_name_control = []
