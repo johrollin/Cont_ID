@@ -361,42 +361,23 @@ t2_threshold, t3_threshold, nb_read_limit_conta, mapping_highest_ratio, count, s
 
 
 
-def run_analysis(out_dir, file_name_data, file_name_control, col_name, col_name_control, threshold, standardisation):
+def run_analysis(out_dir, file_name_data, file_name_control, col_name, col_name_control, standardisation):
 
     # open input file
     virus_data, control_data = open_file(out_dir, file_name_data, file_name_control, col_name, col_name_control)
     # add mapping ratio data
     virus_data, control_data = calculate_mapping_ratio(virus_data,control_data, col_name)
-    if threshold == "all":
-        count = 0
-        for element in threshold_case:
-            # calculate thresshold value from control
-            standardize_t1_threshold, standardize_t2_threshold, t1_threshold, t2_threshold, t3_threshold, \
-                nb_read_limit_conta, mapping_highest_ratio, control_name = calculate_threshold(control_data, count)
-            # make virus classification
-            virus_data = classify_virus(virus_data, control_data, t1_threshold, t2_threshold, t3_threshold, 
-                nb_read_limit_conta, mapping_highest_ratio, control_name, False)
-
-            write_result(out_dir, file_name_data, virus_data, t1_threshold, t2_threshold, 
-                t3_threshold, nb_read_limit_conta, mapping_highest_ratio, count, False)
-
-            if standardisation:
-                virus_data = classify_virus(virus_data, control_data, standardize_t1_threshold, standardize_t2_threshold, t3_threshold, 
-                    nb_read_limit_conta, mapping_highest_ratio, control_name, standardisation)
-
-                write_result(out_dir, file_name_data, virus_data, standardize_t1_threshold, standardize_t2_threshold, 
-                    t3_threshold, nb_read_limit_conta, mapping_highest_ratio, count, standardisation)
-            count += 1
-    else:
+    count = 0
+    for element in threshold_case:
         # calculate thresshold value from control
         standardize_t1_threshold, standardize_t2_threshold, t1_threshold, t2_threshold, t3_threshold, \
-            nb_read_limit_conta, mapping_highest_ratio, control_name = calculate_threshold(control_data, 0)
+            nb_read_limit_conta, mapping_highest_ratio, control_name = calculate_threshold(control_data, count)
         # make virus classification
         virus_data = classify_virus(virus_data, control_data, t1_threshold, t2_threshold, t3_threshold, 
             nb_read_limit_conta, mapping_highest_ratio, control_name, False)
 
         write_result(out_dir, file_name_data, virus_data, t1_threshold, t2_threshold, 
-            t3_threshold, nb_read_limit_conta, mapping_highest_ratio, 0, False)
+            t3_threshold, nb_read_limit_conta, mapping_highest_ratio, count, False)
 
         if standardisation:
             virus_data = classify_virus(virus_data, control_data, standardize_t1_threshold, standardize_t2_threshold, t3_threshold, 
@@ -404,7 +385,8 @@ def run_analysis(out_dir, file_name_data, file_name_control, col_name, col_name_
 
             write_result(out_dir, file_name_data, virus_data, standardize_t1_threshold, standardize_t2_threshold, 
                 t3_threshold, nb_read_limit_conta, mapping_highest_ratio, count, standardisation)
-
+        count += 1
+    
 if __name__ == "__main__":
 
     #TODO argparse use argument
@@ -424,7 +406,6 @@ if __name__ == "__main__":
 
 
 
-    threshold = "all"
     standardisation = True
     # threshold_case = ["2:1000:1.5"]
     # T1 will be divide by 2 
@@ -437,7 +418,7 @@ if __name__ == "__main__":
 
     file_name_control = "control_human_data_MS2.csv"
     file_name_data = "Input_file_human_control_MS2.csv"
-    run_analysis(out_dir, file_name_data, file_name_control, col_name, col_name_control, threshold, standardisation)
+    run_analysis(out_dir, file_name_data, file_name_control, col_name, col_name_control, standardisation)
 
     # list_name_control = []
     # file_name_control = "" 
