@@ -59,9 +59,12 @@ def make_comparison(out_dir_res, filename, col_name, index_data, out_dir_res_tow
                     step3_status = el.classification_step3
                     index_status = element.Indexing
                     list_index_status.append(index_status)
+                    
                     if index_status == step3_status:
+
                         list_class_prediction.append("True")
                         count_correct+=1
+                    #step 3 wrong
                     else:
                         list_class_prediction.append("False")
                         count_wrong+=1
@@ -70,6 +73,9 @@ def make_comparison(out_dir_res, filename, col_name, index_data, out_dir_res_tow
                     else:
                         if step1_status == index_status:
                             count_step1_correct+=1
+                        else:
+                            if not step1_status == "uncertain":
+                                count_step1_wrong += 1
                     if step2_status == "uncertain":
                         count_step2_uncertain+=1
                     else:
@@ -82,7 +88,7 @@ def make_comparison(out_dir_res, filename, col_name, index_data, out_dir_res_tow
 
     batch_data["index_status"] = list_index_status
 
-    count_step2_wrong = total_class_nb- (count_step2_correct + count_step2_uncertain)
+    count_step2_wrong = total_class_nb - (count_step2_correct + count_step2_uncertain)
     count_step1_wrong = total_class_nb - (count_step1_correct + count_step1_uncertain)
     count_step3_correct = count_correct
     count_step3_wrong = count_wrong

@@ -4,6 +4,7 @@
 import argparse
 import os
 import pandas as pd
+import numpy as np
 import statistics
 
 def open_file(out_dir, file_name_data, file_name_control, col_name, col_name_control):
@@ -86,12 +87,12 @@ def calculate_mapping_ratio(virus_data,control_data, col_name, standardisation):
 
     return virus_data, control_data
 
-def calculate_standardize_threshold(control_data, count, standardisation):
+def calculate_standardize_threshold(control_data, case, standardisation):
     """
     calculate standardized threshold value from control for step 1
     """
     
-    current_case = threshold_case[count]
+    current_case = threshold_case[case]
     current_divider = current_case.split(":")
     ###### T1
     try:
@@ -121,7 +122,7 @@ def calculate_standardize_threshold(control_data, count, standardisation):
 
     return standardize_t1_threshold, standardize_t2_threshold
 
-def calculate_threshold(control_data, count, standardisation):
+def calculate_threshold(control_data, case, standardisation):
     """
     calculate threshold value from control
     Get all samplename from control to set target virus to contamination for those sample
@@ -139,10 +140,10 @@ def calculate_threshold(control_data, count, standardisation):
         except ValueError:
             pass
 
-    current_case = threshold_case[count]
+    current_case = threshold_case[case]
     current_divider = current_case.split(":")
 
-    standardize_t1_threshold, standardize_t2_threshold = calculate_standardize_threshold(control_data, count, standardisation)
+    standardize_t1_threshold, standardize_t2_threshold = calculate_standardize_threshold(control_data, case, standardisation)
 
     ###### T3
     # [de-duplication rate > X]
@@ -222,13 +223,6 @@ def classify_virus(virus_data, control_data, t1_threshold, t2_threshold, t3_thre
             is_uncertain = True
             list_classification_step1.append("uncertain")
         # store status of current virus for step 2
-        #TODO
-        #Remove these line after the end of the test
-        # is_uncertain = True
-        # is_infection = False
-        # is_contamination = False
-        #Remove these line after the end of the test
-
         if is_infection:
             list_classification_step2.append("infection")
         if is_contamination:
@@ -274,67 +268,122 @@ def classify_virus(virus_data, control_data, t1_threshold, t2_threshold, t3_thre
     virus_data["Comment"] = list_classification_comment
 
     return virus_data
+def compare_virus_data(virus_data):
+    """ compare case 1 and 2 results at step 3 
+    """
+    # for el in virus_data.itertuples():
+    #     if el["Classification step3 (case 2)"] 
+    virus_data["Comparison both case (step3)"] = np.where(virus_data["Classification step3 (case 1)"] == virus_data["Classification step3 (case 2)"] \
+        , virus_data["Classification step3 (case 1)"], "unconfirmed")
 
-def write_result(out_dir, file_name_data, virus_data, t1_threshold, 
-t2_threshold, t3_threshold, nb_read_limit_conta, mapping_highest_ratio, count, standardisation):
+    return virus_data
+def write_result(out_dir, file_name_data, case1_virus_data, case1_standardize_t1_threshold, \
+        case1_standardize_t2_threshold, case1_t3_threshold, case1_nb_read_limit_conta, \
+        case1_mapping_highest_ratio, virus_data, standardize_t1_threshold, standardize_t2_threshold, \
+        t3_threshold, nb_read_limit_conta, mapping_highest_ratio, standardisation):
     """
     """
     path = file_name_data.split("/")
-    result_name = file_name_data.split(".")
-    #result_folder_name = os.path.join(out_dir, "result_" + str(result_name[0]))
+    #TODO replace by result
     result_folder_name = os.path.join(out_dir, "Result_test")
 
     if len(path)>1: # control/Input_file_control_batch6.csv
-        file_name = "Result_" + "_threshold_case_" + str(count+1) + "_" + str(path[1] )
+        core_name = str(path[1])
     else: #Input_file_control_batch6.csv
-        file_name = "Result_" + "_threshold_case_" + str(count+1) + "_" + str(path[0])
+        core_name = str(path[0])
+
+    file_name = "Result_" + core_name
+
     try:
         os.mkdir(result_folder_name)
     except FileExistsError:
         pass
+    case1_virus_data.rename(columns={"Confident classification (step1)": "Classification step1 (case 1)", \
+        "Standart classification (step2)": "Classification step2 (case 1)", \
+        "Total classification (step3)": "Classification step3 (case 1)", \
+        "Comment": "Comment (case 1)"}, inplace=True, copy=False)
 
-    virus_data.to_csv(os.path.join(result_folder_name, file_name), index=False, sep=';', encoding='utf-8')
+    case1_virus_data["Classification step1 (case 2)"] = virus_data["Confident classification (step1)"].to_numpy()
+    case1_virus_data["Classification step2 (case 2)"] = virus_data["Standart classification (step2)"].to_numpy()
+    case1_virus_data["Classification step3 (case 2)"] = virus_data["Total classification (step3)"].to_numpy()
+    case1_virus_data["Comment (case 2)"] = virus_data["Comment"].to_numpy()
+    # compare case 1 and 2 results at step 3 
+    final_virus_data = compare_virus_data(case1_virus_data)
+    case1_virus_data.to_csv(os.path.join(result_folder_name, file_name), index=False, sep=';', encoding='utf-8')
     
-
-    current_case = threshold_case[count]
-    current_divider = current_case.split(":")
-    with open(os.path.join(result_folder_name, file_name), 'a') as out_file:
-        out_file.write("\n")
-        if t1_threshold == 1 :
-            out_file.write("#mapping ratio threshold (step1 t1); ((avg+3*std)/" \
-                + current_divider[0] + "; WARNING this threshold was ineffective as you don't have enough contamination in your control ; " + str(t1_threshold) + "\n")
-        else:
-            out_file.write("#mapping ratio threshold (step1 t1); ((avg+3*std)/" \
-                + current_divider[0] + ";" + str(t1_threshold) + "\n")
-        out_file.write("#reads_nb_mapped threshold (step1 t2); Hihgest Reads Nr. \
-             Per sample in the same run/" + current_divider[1] + ";" + str(t2_threshold) + "\n")
-        out_file.write("#deduplication threshold (step2 t3); ((avg(deduplication_ratio))/"\
-             + current_divider[2] + ";" + str(t3_threshold) + "\n")
-        out_file.write("#nb_read_limit_conta (step3 t4_1); read_number ;" + str(nb_read_limit_conta) + "\n")
-        out_file.write("#mapping_highest_ratio (step3 t4_2); highest mapping ratio ;" + str(mapping_highest_ratio) + "\n")
-        out_file.write("#standardisation number ;" + str(standardisation) + "\n")
+    current_divider1 = threshold_case[0].split(":")
+    current_divider2 = threshold_case[1].split(":")
+    file_name_metric =  "Metric_" + core_name
+    with open(os.path.join(result_folder_name, file_name_metric), 'w') as out_file:
         
+        out_file.write("Case 1 \n")
+        if case1_standardize_t1_threshold == 1 :
+            out_file.write("# mapping ratio threshold (step1 t1) WARNING not enough contamination in your control for this metric; ((avg+3*std)/" \
+                + current_divider1[0] +  ";" + str(case1_standardize_t1_threshold) + "\n")
+        else:
+            out_file.write("# mapping ratio threshold (step1 t1); ((avg+3*std)/" \
+                + current_divider1[0] + ";" + str(case1_standardize_t1_threshold) + "\n")
+        out_file.write("# reads_nb_mapped threshold (step1 t2); Hihgest Reads Nr. \
+             Per sample in the same run/" + current_divider1[1] + ";" + str(case1_standardize_t2_threshold) + "\n")
+        out_file.write("# deduplication threshold (step2 t3); ((avg(deduplication_ratio))/"\
+             + current_divider1[2] + ";" + str(case1_t3_threshold) + "\n")
+        out_file.write("# nb_read_limit_conta (step3 t4_1); read_number ;" + str(case1_nb_read_limit_conta) + "\n")
+        out_file.write("# mapping_highest_ratio (step3 t4_2); highest mapping ratio ;" + str(case1_mapping_highest_ratio) + "\n")
+        out_file.write("\n")
+
+        out_file.write("Case 2 \n")
+        if standardize_t1_threshold == 1 :
+            out_file.write("# mapping ratio threshold (step1 t1) WARNING not enough contamination in your control for this metric; ((avg+3*std)/" \
+                + current_divider2[0] +  ";" + str(standardize_t1_threshold) + "\n")
+        else:
+            out_file.write("# mapping ratio threshold (step1 t1); ((avg+3*std)/" \
+                + current_divider2[0] + ";" + str(standardize_t1_threshold) + "\n")
+        out_file.write("# reads_nb_mapped threshold (step1 t2); Hihgest Reads Nr. \
+             Per sample in the same run/" + current_divider2[1] + ";" + str(standardize_t2_threshold) + "\n")
+        out_file.write("# deduplication threshold (step2 t3); ((avg(deduplication_ratio))/"\
+             + current_divider1[2] + ";" + str(t3_threshold) + "\n")
+        out_file.write("# nb_read_limit_conta (step3 t4_1); read_number ;" + str(nb_read_limit_conta) + "\n")
+        out_file.write("# mapping_highest_ratio (step3 t4_2); highest mapping ratio ;" + str(mapping_highest_ratio) + "\n")
+        out_file.write("\n")     
+        out_file.write("# standardisation number ;" + str(standardisation) + "\n")
+           
 
 
 
 def run_analysis(out_dir, file_name_data, file_name_control, col_name, col_name_control, standardisation):
-
+    """
+    """
     # open input file
     virus_data, control_data = open_file(out_dir, file_name_data, file_name_control, col_name, col_name_control)
     # add mapping ratio data
     virus_data, control_data = calculate_mapping_ratio(virus_data,control_data, col_name, standardisation)
-    count = 0
-    for element in threshold_case:
-        # calculate thresshold value from control
-        standardize_t1_threshold, standardize_t2_threshold, t3_threshold, \
-            nb_read_limit_conta, mapping_highest_ratio, control_name = calculate_threshold(control_data, count, standardisation)
-        # make virus classification
-        virus_data = classify_virus(virus_data, control_data, standardize_t1_threshold, standardize_t2_threshold, t3_threshold, 
-            nb_read_limit_conta, mapping_highest_ratio, control_name)
 
-        write_result(out_dir, file_name_data, virus_data, standardize_t1_threshold, standardize_t2_threshold, 
-            t3_threshold, nb_read_limit_conta, mapping_highest_ratio, count, standardisation)
-        count += 1
+    # calculate threshold value from control CASE1
+    standardize_t1_threshold, standardize_t2_threshold, t3_threshold, \
+        nb_read_limit_conta, mapping_highest_ratio, control_name = calculate_threshold(control_data, 0, standardisation)
+    # make virus classification CASE1
+    virus_data = classify_virus(virus_data, control_data, standardize_t1_threshold, standardize_t2_threshold, t3_threshold, 
+        nb_read_limit_conta, mapping_highest_ratio, control_name)
+
+    # store values
+    case1_virus_data = virus_data.copy()
+    case1_standardize_t1_threshold = standardize_t1_threshold
+    case1_standardize_t2_threshold = standardize_t2_threshold
+    case1_t3_threshold = t3_threshold
+    case1_nb_read_limit_conta = nb_read_limit_conta
+    case1_mapping_highest_ratio = mapping_highest_ratio
+    virus_data
+    # calculate threshold value from control CASE2
+    standardize_t1_threshold, standardize_t2_threshold, t3_threshold, \
+        nb_read_limit_conta, mapping_highest_ratio, control_name = calculate_threshold(control_data, 1, standardisation)
+    # make virus classification CASE2
+    virus_data = classify_virus(virus_data, control_data, standardize_t1_threshold, standardize_t2_threshold, t3_threshold, 
+        nb_read_limit_conta, mapping_highest_ratio, control_name)
+
+    write_result(out_dir, file_name_data, case1_virus_data, case1_standardize_t1_threshold, \
+        case1_standardize_t2_threshold, case1_t3_threshold, case1_nb_read_limit_conta, \
+        case1_mapping_highest_ratio, virus_data, standardize_t1_threshold, standardize_t2_threshold, \
+        t3_threshold, nb_read_limit_conta, mapping_highest_ratio, standardisation)
     
 if __name__ == "__main__":
 
@@ -358,7 +407,7 @@ if __name__ == "__main__":
     # T2 divide by 1000
     # T3 divide by 1.5
     # ["2:1000:1.5",            "0.002:500:1.5"]
-    #  'standart' banana virus, integrated banana virus 
+    #  'standart' banana virus, integrated banana virus  
     global threshold_case 
     threshold_case = ["2:1000:1.5:5:1", "0.002:500:1.5:5:1"]
     file_name_control = "control_human_data_MS2.csv"
