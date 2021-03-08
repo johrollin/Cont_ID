@@ -133,7 +133,7 @@ def calculate_threshold(control_data, case, standardisation):
     deduplication_ratio = []
     for el in control_data.itertuples():
         if el.Indexing == 1 or el.Indexing == "PRESENT":
-            control_name.append(el.Sample_name)
+            control_name.append(el.Sample_ID)
         try:
             if not pd.isna(el.deduplication):
                 deduplication_ratio.append(float(el.deduplication))
@@ -167,7 +167,7 @@ def check_comment(list_classification_comment, element, control_name, is_infecti
     """
     #col_name = ["Virus_detected","Sample_name","Sample ID","Reads_nb_mapped", "deduplication"]
     msg = "" 
-    if element.Sample_name in control_name and is_infection:
+    if element.Sample_ID in control_name and is_infection:
         msg += "The sample use for control has another virus labeled as infectious (consider using external control or changing threshold) "
     if element.Reads_nb_mapped <= 5 and is_infection:
         msg += "This infectious label is with less than 5 reads, the result validity is doubtful "
@@ -285,7 +285,7 @@ def write_result(out_dir, file_name_data, case1_virus_data, case1_standardize_t1
     """
     path = file_name_data.split("/")
     #TODO replace by result
-    result_folder_name = os.path.join(out_dir, "Result_test")
+    result_folder_name = os.path.join(out_dir, "Result")
 
     if len(path)>1: # control/Input_file_control_batch6.csv
         core_name = str(path[1])
@@ -397,10 +397,10 @@ if __name__ == "__main__":
     # file_name_data = "other_virus/other_virus_batch$.csv"
     
     # file_name_control = "control/Input_file_control_batch$.csv"
-    col_name = ["Virus_detected","Sample_name","Sample ID","Reads_nb_mapped", "deduplication", "Total_Reads_Nr"]
-    col_name_control = ["Virus_detected","Sample_name","Sample ID","Reads_nb_mapped", "deduplication", "Total_Reads_Nr", "Indexing"]
+    col_name = ["Virus_detected","Sample_name","Sample_ID","Reads_nb_mapped", "deduplication", "Total_Reads_Nr"]
+    col_name_control = ["Virus_detected","Sample_name","Sample_ID","Reads_nb_mapped", "deduplication", "Total_Reads_Nr", "Indexing"]
     
-    out_dir = "/mnt/c/Users/johan/OneDrive/Bureau/bioinfo/Wei_virus_test/Key_sample/Human_data_V2/"
+    out_dir = "/mnt/c/Users/johan/OneDrive/Bureau/bioinfo/Wei_virus_test/Key_sample/ALL_final_version/Australia/"
     standardisation = 5000000
     # threshold_case = ["2:1000:1.5"]
     # T1 will be divide by 2 
@@ -410,9 +410,8 @@ if __name__ == "__main__":
     #  'standart' banana virus, integrated banana virus  
     global threshold_case 
     threshold_case = ["2:1000:1.5:5:1", "0.002:500:1.5:5:1"]
-    file_name_control = "control_human_data_MS2.csv"
-    file_name_data = "Input_file_human_control_MS2.csv"
-
+    file_name_control = "Control_file_Australia_SmallRNA_TRSV_RNA2.csv"
+    file_name_data = "Input_file_Australia_SmallRNA_TRSV_RNA2.csv"
     run_analysis(out_dir, file_name_data, file_name_control, col_name, col_name_control, standardisation)
 
     # list_name_control = []
@@ -460,5 +459,5 @@ if __name__ == "__main__":
     #         print("Run: ")
     #         print(file_name_control)
     #         print(file_name_data)
-    #         run_analysis(out_dir, file_name_data, file_name_control, col_name, col_name_control, threshold, standardisation)
+    #         run_analysis(out_dir, file_name_data, file_name_control, col_name, col_name_control, standardisation)
 
