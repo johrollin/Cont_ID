@@ -45,31 +45,35 @@ def make_addcount(count_current_correct, count_current_uncertain, count_current_
 def make_calc(count_FN, count_FP, count_TN, count_TP):
     """
     """
-    bool_make_lr = True
     if count_TP + count_FN == 0:
         dse = "unknown"
-        bool_make_lr = False
 
     else:
         dse = count_TP / (count_TP + count_FN)
-    if count_TN + count_FP ==0:
+    if count_TN + count_FP == 0:
         dsp ="unknown"
-        bool_make_lr = False
     else:
         dsp = count_TN / (count_TN + count_FP)
 
     accuracy = (count_TP + count_TN) / (count_TP + count_TN + count_FP + count_FN)
 
-    if dsp == 1 or not bool_make_lr:
-        lrpos = "unknown"
-    else:
-        lrpos = dse / (1-dsp)
-    if dse == 1 or not bool_make_lr:
-        lrneg = "unknown"
-    else:
-        lrneg = dsp / (1-dse)
+    ############### TODO change to make 
+    # FDR FP/(FP+TP)
+    # FOR Fn/(FN+TN)
 
-    return dse, dsp, accuracy, lrpos, lrneg
+    if count_TP + count_FP == 0:
+        fdr = "unknown"
+    else:
+        fdr = count_FP / (count_TP + count_FP)
+    if count_TN + count_FN == 0:
+        f_omission_r = "unknown"
+    else:
+        f_omission_r = count_FN / (count_TN + count_FN)
+
+
+
+
+    return dse, dsp, accuracy, fdr, f_omission_r
 
 
 def run_simple_comparison(index_data, batch_data, col_name):
@@ -178,30 +182,30 @@ def run_analysis(out_dir, out_dir_res, out_dir_index, out_dir_res_towrite, col_n
     list3_bc = [count_bc_TP, count_bc_TN, count_bc_FP, count_bc_FN]
 
     #calc comparison
-    dse_bc, dsp_bc, accuracy_bc, lrpos_bc, lrneg_bc = make_calc(count_bc_FN, count_bc_FP, count_bc_TN,count_bc_TP)
+    dse_bc, dsp_bc, accuracy_bc, fdr_bc, for_bc = make_calc(count_bc_FN, count_bc_FP, count_bc_TN,count_bc_TP)
 
     #calc step 1 case 1
-    dse_s1_c1, dsp_s1_c1, accuracy_s1_c1, lrpos_s1_c1, lrneg_s1_c1 = make_calc(count_s1_c1_FN, count_s1_c1_FP, count_s1_c1_TN,count_s1_c1_TP)
+    dse_s1_c1, dsp_s1_c1, accuracy_s1_c1, fdr_s1_c1, for_s1_c1 = make_calc(count_s1_c1_FN, count_s1_c1_FP, count_s1_c1_TN,count_s1_c1_TP)
 
     #calc step 2 case 1
-    dse_s2_c1, dsp_s2_c1, accuracy_s2_c1, lrpos_s2_c1, lrneg_s2_c1 = make_calc(count_s2_c1_FN, count_s2_c1_FP, count_s2_c1_TN,count_s2_c1_TP)
+    dse_s2_c1, dsp_s2_c1, accuracy_s2_c1, fdr_s2_c1, for_s2_c1 = make_calc(count_s2_c1_FN, count_s2_c1_FP, count_s2_c1_TN,count_s2_c1_TP)
 
     #calc step 3 case 1
-    dse_s3_c1, dsp_s3_c1, accuracy_s3_c1, lrpos_s3_c1, lrneg_s3_c1 = make_calc(count_s3_c1_FN, count_s3_c1_FP, count_s3_c1_TN,count_s3_c1_TP)
+    dse_s3_c1, dsp_s3_c1, accuracy_s3_c1, fdr_s3_c1, for_s3_c1 = make_calc(count_s3_c1_FN, count_s3_c1_FP, count_s3_c1_TN,count_s3_c1_TP)
 
     #calc step 1 case 2
-    dse_s1_c2, dsp_s1_c2, accuracy_s1_c2, lrpos_s1_c2, lrneg_s1_c2 = make_calc(count_s1_c2_FN, count_s1_c2_FP, count_s1_c2_TN,count_s1_c2_TP)
+    dse_s1_c2, dsp_s1_c2, accuracy_s1_c2, fdr_s1_c2, for_s1_c2 = make_calc(count_s1_c2_FN, count_s1_c2_FP, count_s1_c2_TN,count_s1_c2_TP)
 
     #calc step 2 case 2 
-    dse_s2_c2, dsp_s2_c2, accuracy_s2_c2, lrpos_s2_c2, lrneg_s2_c2 = make_calc(count_s2_c2_FN, count_s2_c2_FP, count_s2_c2_TN,count_s2_c2_TP)
+    dse_s2_c2, dsp_s2_c2, accuracy_s2_c2, fdr_s2_c2, for_s2_c2 = make_calc(count_s2_c2_FN, count_s2_c2_FP, count_s2_c2_TN,count_s2_c2_TP)
 
     #calc step 3 case 2
-    dse_s3_c2, dsp_s3_c2, accuracy_s3_c2, lrpos_s3_c2, lrneg_s3_c2 = make_calc(count_s3_c2_FN, count_s3_c2_FP, count_s3_c2_TN,count_s3_c2_TP)
-    list4_name = ["Step 1 DSE", "Step 1 DSP", "Step 1 accuracy", "Step 1 LR+", "Step 1 LR-", "Step 2 DSE", "Step 2 DSP", "Step 2 accuracy", "Step 2 LR+", "Step 2 LR-", "Step 3 DSE", "Step 3 DSP", "Step 3 accuracy", "Step 3 LR+", "Step 3 LR-"]
-    list4_bc_name = ["DSE", "DSP", "accuracy", "LR+", "LR-"]
-    list4_c1 = [dse_s1_c1, dsp_s1_c1, accuracy_s1_c1, lrpos_s1_c1, lrneg_s1_c1, dse_s2_c1, dsp_s2_c1, accuracy_s2_c1, lrpos_s2_c1, lrneg_s2_c1, dse_s3_c1, dsp_s3_c1, accuracy_s3_c1, lrpos_s3_c1, lrneg_s3_c1]
-    list4_c2 = [dse_s1_c2, dsp_s1_c2, accuracy_s1_c2, lrpos_s1_c2, lrneg_s1_c2, dse_s2_c2, dsp_s2_c2, accuracy_s2_c2, lrpos_s2_c2, lrneg_s2_c2, dse_s3_c2, dsp_s3_c2, accuracy_s3_c2, lrpos_s3_c2, lrneg_s3_c2]
-    list4_bc = [dse_bc, dsp_bc, accuracy_bc, lrpos_bc, lrneg_bc]
+    dse_s3_c2, dsp_s3_c2, accuracy_s3_c2, fdr_s3_c2, for_s3_c2 = make_calc(count_s3_c2_FN, count_s3_c2_FP, count_s3_c2_TN,count_s3_c2_TP)
+    list4_name = ["Step 1 DSE", "Step 1 DSP", "Step 1 accuracy", "Step 1 FDR", "Step 1 FOR", "Step 2 DSE", "Step 2 DSP", "Step 2 accuracy", "Step 2 FDR", "Step 2 FOR", "Step 3 DSE", "Step 3 DSP", "Step 3 accuracy", "Step 3 FDR", "Step 3 FOR"]
+    list4_bc_name = ["DSE", "DSP", "accuracy", "FDR", "FOR"]
+    list4_c1 = [dse_s1_c1, dsp_s1_c1, accuracy_s1_c1, fdr_s1_c1, for_s1_c1, dse_s2_c1, dsp_s2_c1, accuracy_s2_c1, fdr_s2_c1, for_s2_c1, dse_s3_c1, dsp_s3_c1, accuracy_s3_c1, fdr_s3_c1, for_s3_c1]
+    list4_c2 = [dse_s1_c2, dsp_s1_c2, accuracy_s1_c2, fdr_s1_c2, for_s1_c2, dse_s2_c2, dsp_s2_c2, accuracy_s2_c2, fdr_s2_c2, for_s2_c2, dse_s3_c2, dsp_s3_c2, accuracy_s3_c2, fdr_s3_c2, for_s3_c2]
+    list4_bc = [dse_bc, dsp_bc, accuracy_bc, fdr_bc, for_bc]
 
     try:
         os.mkdir(out_dir_res_towrite)
