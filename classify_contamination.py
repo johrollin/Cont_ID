@@ -400,7 +400,7 @@ if __name__ == "__main__":
     col_name = ["Virus_detected","Sample_name","Sample_ID","Reads_nb_mapped", "deduplication", "Total_Reads_Nr"]
     col_name_control = ["Virus_detected","Sample_name","Sample_ID","Reads_nb_mapped", "deduplication", "Total_Reads_Nr", "Indexing"]
     
-    out_dir = "/mnt/c/Users/johan/OneDrive/Bureau/bioinfo/Wei_virus_test/Key_sample/ALL_final_version/banana/"
+    out_dir = "/mnt/c/Users/johan/OneDrive/Bureau/bioinfo/Wei_virus_test/Key_sample/ALL_final_version/banana_mismatch/batch5/"
     standardisation = 5000000
     # threshold_case = ["2:1000:1.5"]
     # T1 will be divide by 2 
@@ -410,8 +410,9 @@ if __name__ == "__main__":
     #  'standart' banana virus, integrated banana virus  
     global threshold_case 
     threshold_case = ["2:1000:1.5:5:1", "0.002:500:1.5:5:1"]
-    file_name_control = "control_batch4.csv"
-    file_name_data = "Input_file_other_virus_batch4_clean.csv"
+    file_name_control = "control_batch1_CT_L23.csv"
+    file_name_data = "Input__batch1_CT_L23.csv"
+    #file_name_data = "Input_file_other_virus_batch5.csv"
     run_analysis(out_dir, file_name_data, file_name_control, col_name, col_name_control, standardisation)
 
     # list_name_control = []
