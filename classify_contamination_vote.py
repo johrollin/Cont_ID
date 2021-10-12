@@ -399,33 +399,9 @@ def run_analysis(out_dir, file_name_data, file_name_control, col_name, col_name_
         case1_standardize_t2_threshold, case1_t3_threshold, case1_nb_read_limit_conta, \
         case1_mapping_highest_ratio, virus_data, standardize_t1_threshold, standardize_t2_threshold, \
         t3_threshold, nb_read_limit_conta, mapping_highest_ratio, standardisation)
-    
-if __name__ == "__main__":
 
-    #TODO argparse use argument
-    # BSV strain by strain
-    # file_name_data = "input_file_bsv_strain/Input_file_batch$_bsv_strains.csv"
-    # BSV all strain
-    # file_name_data = "input_file5_strain/Input_file_batch$.csv"
-    # other virus cmv bbmmv bbtv ...
-
-    col_name = ["Virus_detected","Sample_name","Sample_ID","Reads_nb_mapped", "deduplication", "Total_Reads_Nr"]
-    col_name_control = ["Virus_detected","Sample_name","Sample_ID","Reads_nb_mapped", "deduplication", "Total_Reads_Nr", "Indexing"]
-    
-    out_dir = "/mnt/c/Users/johan/OneDrive/Bureau/bioinfo/Wei_virus_test/Key_sample/ALL_final_version_vote/human/"
-    standardisation = 5000000
-    # threshold_case = ["2:1000:1.5"]
-    # T1 will be divide by 2 
-    # T2 divide by 1000
-    # T3 divide by 1.5
-    # ["2:1000:1.5",            "0.002:500:1.5"]
-    #  'standart' banana virus, integrated banana virus  
-    global threshold_case 
-    threshold_case = ["2:1000:1.5:5:1", "0.002:500:1.5:5:1"]
-    # file_name_control = "control_batch5.csv"
-    # file_name_data = "Input_file_batch5_bsv_strains.csv"
-    # file_name_data = "Input_file_other_virus_batch5.csv"
-    # run_analysis(out_dir, file_name_data, file_name_control, col_name, col_name_control, standardisation)
+def manual_test(col_name, col_name_control, out_dir, standardisation):
+    """"""
 
     filename_list = os.listdir(out_dir)
 
@@ -460,6 +436,78 @@ if __name__ == "__main__":
                         print(filename_control)
                         print("------")
                         run_analysis(out_dir, file_name_data, filename_control, col_name, col_name_control, standardisation)
+
+def read_arg():
+    """ check user arguments"""
+
+    help_text = """
+    Cont-ID is a tool to check for cross-contamination 
+    using metric from previous analysis like reads number, and deduplication.
+    """
+
+    help_epilog = """
+    Write description here
+
+    See also https://github.com/
+    """
+
+    parser = argparse.ArgumentParser(description=help_text,
+                                    epilog=help_epilog,
+                                    formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('-dr', '--data_repository', type=str, required=True,
+                    help='repository where the data are')
+    parser.add_argument('-all', '--all_files', type=bool, default=False,
+                    help='If True, will go through every file \
+                    of data_repository (default False')   
+    parser.add_argument('-s', '--standardisation', type=int, default=5000000,
+                    help='expected number of reads for each sample to use for standardisation')                 
+    parser.add_argument('-tp', '--threshold_personalisation', type=list, default=["2:1000:1.5:5:1", "0.002:500:1.5:5:1"],
+                    help='personalisation threshold like ["2:1000:1.5:5:1", "0.002:500:1.5:5:1"] \
+                        with ":" as separator')               
+    parser.add_argument('-fd', '--file_data', type=str, default="",
+                    help='file name containing data for processing')
+    parser.add_argument('-fc', '--file_control', type=str, default="",
+                    help='file name containing alien control data')     
+    args = parser.parse_args()
+
+    out_dir = args.data_repository
+    # out_dir = "/mnt/c/Users/johan/OneDrive/Bureau/bioinfo/Wei_virus_test/Key_sample/ALL_final_version_vote/human/"
+    
+    standardisation = args.standardisation
+    # standardisation = 5000000
+    
+    bool_all_file = args.all_files
+    # bool_all_file = False
+    
+    file_name_data = args.file_data
+    filename_control = args.file_control
+
+    # threshold_case = ["2:1000:1.5"]
+    # T1 will be divide by 2 or 0.002 
+    # T2 divide by 1000 or 500
+    # T3 divide by 1.5
+    # ["2:1000:1.5", "0.002:500:1.5"]s  
+    global threshold_case 
+    threshold_case = args.threshold_personalisation
+    #threshold_case = ["2:1000:1.5:5:1", "0.002:500:1.5:5:1"]
+    #TODO make integrity check
+
+    return out_dir, standardisation, file_name_data, filename_control, bool_all_file
+
+
+if __name__ == "__main__":
+
+    out_dir, standardisation, file_name_data, filename_control, bool_all_file = read_arg()
+
+    col_name = ["Virus_detected","Sample_name","Sample_ID","Reads_nb_mapped", "deduplication", "Total_Reads_Nr"]
+    col_name_control = ["Virus_detected","Sample_name","Sample_ID","Reads_nb_mapped", "deduplication", "Total_Reads_Nr", "Indexing"]
+
+    if bool_all_file: 
+        manual_test(col_name, col_name_control, out_dir, standardisation)
+    else:
+        run_analysis(out_dir, file_name_data, filename_control, col_name, col_name_control, standardisation)
+
+
 
 
   
