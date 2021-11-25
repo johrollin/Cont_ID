@@ -446,9 +446,9 @@ def read_arg():
     """
 
     help_epilog = """
-    Write description here
-
-    See also https://github.com/
+    Cont-ID is a tool to check for cross-contamination 
+    using metric from previous analysis like reads number, and deduplication.
+    see here: https://github.com/johrollin/viral_contamination
     """
 
     parser = argparse.ArgumentParser(description=help_text,
@@ -493,7 +493,6 @@ def read_arg():
     #TODO make integrity check
 
     return out_dir, standardisation, file_name_data, filename_control, bool_all_file
-
 
 if __name__ == "__main__":
 
