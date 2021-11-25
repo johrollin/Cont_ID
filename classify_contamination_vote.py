@@ -458,16 +458,16 @@ def read_arg():
                     help='repository where the data are')
     parser.add_argument('-all', '--all_files', type=bool, default=False,
                     help='If True, will go through every file \
-                    of data_repository (default False')   
+                    of the data_repository (default False)  NOT COMPATIBLE with file_data and file_control')   
     parser.add_argument('-s', '--standardisation', type=int, default=5000000,
-                    help='expected number of reads for each sample to use for standardisation')                 
-    parser.add_argument('-tp', '--threshold_personalisation', type=list, default=["2:1000:1.5:5:1", "0.002:500:1.5:5:1"],
-                    help='personalisation threshold like ["2:1000:1.5:5:1", "0.002:500:1.5:5:1"] \
-                        with ":" as separator')               
+                    help='expected number of reads for each sample to use for standardisation')                               
+    parser.add_argument('-tp', '--threshold_personalisation', nargs='+', default=["2:1000:1.5:5:1","0.002:500:1.5:5:1"],
+                        help='personalisation threshold like "2:1000:1.5:5:1" "0.002:500:1.5:5:1" \
+                        with ":" as separator (the 5 control limit are mandatory)')                       
     parser.add_argument('-fd', '--file_data', type=str, default="",
-                    help='file name containing data for processing')
+                    help='file name containing data for processing NOT COMPATIBLE with all_files')
     parser.add_argument('-fc', '--file_control', type=str, default="",
-                    help='file name containing alien control data')     
+                    help='file name containing alien control data NOT COMPATIBLE with all_files')     
     args = parser.parse_args()
 
     out_dir = args.data_repository
@@ -482,15 +482,34 @@ def read_arg():
     file_name_data = args.file_data
     filename_control = args.file_control
 
-    # threshold_case = ["2:1000:1.5"]
-    # T1 will be divide by 2 or 0.002 
-    # T2 divide by 1000 or 500
-    # T3 divide by 1.5
-    # ["2:1000:1.5", "0.002:500:1.5"]s  
-    global threshold_case 
+    global threshold_case  
     threshold_case = args.threshold_personalisation
-    #threshold_case = ["2:1000:1.5:5:1", "0.002:500:1.5:5:1"]
-    #TODO make integrity check
+
+    # make integrity check
+    count=0
+    for el in threshold_case:
+        count+=1
+        sublist = el.split(":")
+        if len(sublist)!=5: # 5 elements in threshold
+            raise Exception("5 variables are expected for each case")
+    if count !=2: # two set of threshold
+        raise Exception("Two set of variables are needed (2 cases)")
+                    # if you want only one, copy the default one and consider only your case TO add to documentation
+    #data_repository is a valid repository
+    if not os.path.isdir(out_dir):
+        raise Exception("data_repository is not a valid repository path")
+    
+    # file_name_data filename_control are correct file
+    if file_name_data!="" or filename_control!="":
+        if bool_all_file: 
+            raise Exception(" You should provide name only if you don't want to analyse all the folder.")
+        if file_name_data!="" and filename_control!="":
+            if not os.path.isfile(out_dir+'/'+file_name_data):
+                raise Exception("file_name_data is not a valid file")
+            if not os.path.isfile(out_dir+'/'+filename_control):
+                raise Exception("filename_control is not a valid file")
+        else:
+            raise Exception("both file_data & file_control should be given")
 
     return out_dir, standardisation, file_name_data, filename_control, bool_all_file
 
