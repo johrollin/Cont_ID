@@ -59,7 +59,7 @@ The input file template for control & data are csv file available in this reposi
 - **Sample ID** : ID of the sample (the couple virus detected + sample ID need to be unique)
 - **Mapped reads Nr.** : Reads number that map the specific virus on the speficic sample.
 - **Mapped reads deduplication...** : percentage of reads removed by deduplication (see article) can be fill with 'ND' (No Data) if not calculated or below the deduplication limit.
-- *Total_Reads_Nr*: total reads number of the specific sample.
+- **Total_Reads_Nr**: total reads number of the specific sample.
 
 The control file should contain the same columns with an additional indexing one that can be fill with 'contamination' or 'infection'.
 
