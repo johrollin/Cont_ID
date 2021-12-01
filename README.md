@@ -66,7 +66,7 @@ arguments:
                         file_data and file_control
   -s STANDARDISATION, --standardisation STANDARDISATION
                         expected number of reads for each sample to use for
-                        standardisation
+                        standardisation default 5000000
   -tp THRESHOLD_PERSONALISATION [THRESHOLD_PERSONALISATION ...], --threshold_personalisation THRESHOLD_PERSONALISATION [THRESHOLD_PERSONALISATION ...]
                         personalisation threshold like "2:1000:1.5:5:1"
                         "0.002:500:1.5:5:1" with ":" as separator (the 5
@@ -102,6 +102,13 @@ The tool will process all the files present in the '-dr folder' when they follow
 The '-s' and '-tp' option can be used if you don't want to use the default parameter.
 
 The '-all' option should never be used if '-fd' and '-fc' are given as '-all' asks the process of all the files while '-fd' and '-fc' give one specific to process.
+
+The '-tp' THRESHOLD_PERSONALISATION option needs two sets of threshold like "0.002:500:1.5:5:1" with ":" as separator each set need 5 numbers that will be used as threshold for each rule
+
+<p align="center">
+    <img src="https://github.com/johrollin/viral_contamination/blob/master/img/Cont-ID_formula_casesV2.png" alt="Logo">
+</p>
+For more information, you can read the artcile (link at the begining of this README)
 
 ## How to read the results
 
