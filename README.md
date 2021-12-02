@@ -27,7 +27,7 @@ For more information: https://www.biorxiv.org/content/XX
 
 ## Prerequisites
 
-The code has been tested with Python V3.7.4 with the following dependancies:
+The code has been tested with Python V3.7.4 with the following dependencies:
 
 ```shell
 pandas
@@ -51,17 +51,17 @@ python classify_contamination_vote.py -h
 
 Cont-ID works with .csv input and accepts both ";" and "," as separator.
 
-The input file template for control & data are csv file available in this repository and should be completed as follow.
+The input template file for control & data are csv files available in this repository, and should be completed as follows:
 <img src="https://github.com/johrollin/viral_contamination/blob/master/img/input_file_column.PNG" alt="Logo" >
 
 - **Virus detected** : Name (or abbreviation) of virus
-- **Sample name** : Name of the sample (free text but no special caracter allowed)
+- **Sample name** : Name of the sample (free text but no special character allowed)
 - **Sample ID** : ID of the sample (the couple virus detected + sample ID need to be unique)
-- **Mapped reads Nr.** : Reads number that map the specific virus on the speficic sample.
+- **Mapped reads Nr.** : Reads number that map the specific virus on the specific sample.
 - **Mapped reads deduplication...** : percentage of reads removed by deduplication (see article) can be fill with 'ND' (No Data) if not calculated or below the deduplication limit.
 - **Total_Reads_Nr**: total reads number of the specific sample.
 
-The control file should contain the same columns with an additional indexing one that can be fill with 'contamination' or 'infection'.
+The control file should contain the same columns with an additional indexing one that can be filled with 'contamination' or 'infection'.
 
 #### How to launch
 
@@ -83,14 +83,14 @@ arguments:
                         personalisation threshold like "2:1000:1.5:5:1"
                         "0.002:500:1.5:5:1" with ":" as separator (the 5
                         control limit are mandatory)
-  -fd FILE_DATA, --file_data FILE_DATA
+  -fd FILE_DATA, --file data FILE_DATA
                         file name containing data for processing NOT
-                        COMPATIBLE with all_files
-  -fc FILE_CONTROL, --file_control FILE_CONTROL
+                        COMPATIBLE with all files
+  -fc FILE_CONTROL, --file control FILE_CONTROL
                         file name containing alien control data NOT COMPATIBLE
-                        with all_files
+                        with all files
 ```
-There is two mode for Cont-ID:
+There are two modes for Cont-ID:
 
 - If you have few sequencing batch to check, you can launch Cont-ID individually for each of them:
 
@@ -115,28 +115,28 @@ The '-s' and '-tp' option can be used if you don't want to use the default param
 
 The '-all' option should never be used if '-fd' and '-fc' are given as '-all' asks the process of all the files while '-fd' and '-fc' give one specific to process.
 
-The '-tp' THRESHOLD_PERSONALISATION option needs two sets of threshold like "0.002:500:1.5:5:1" with ":" as separator each set need 5 numbers that will be used as threshold for each rule.
+The '-tp' THRESHOLD_PERSONALISATION option needs two sets of thresholds like "0.002:500:1.5:5:1" with ":" as separator each set needs 5 numbers that will be used as threshold for each rule.
 
 <p align="center">
     <img src="https://github.com/johrollin/viral_contamination/blob/master/img/Cont-ID_formula_casesV2.png" alt="Logo">
 </p>
-For more information, you can read the article (link at the begining of this README).
+For more information, you can read the article (link at the beginning of this README).
 
 ## How to read the results
 
-Results are displayed in csv format. In the result file you will find all the data present in the input file with the addition of several columns, the first three (standardize_reads_nb_mapped, mapping_ratio, standardize_mapping_ratio) contain metrics data after standardization. The next columns (Standart classification (3 votes) (case 1/2), Total classification (2 votes) (case 1/2), Classification (case 1/2), Comment (case 1/2)) contains the tool prediction for each case, the comments provide the detail of the rules vote. Finnally the last column (Comparison both case) give the prediction according to the comaprison between the 2 cases with 3 possible output (contamination, infection or unconfirmed).
+Results are displayed in csv format. In the results file you will find all the data present in the input file with the addition of several columns, the first three (standardize_reads_nb_mapped, mapping_ratio, standardize_mapping_ratio) contain metrics data after standardization. The next columns (Standard  classification (3 votes) (case 1/2), Total classification (2 votes) (case 1/2), Classification (case 1/2), Comment (case 1/2)) contains the tool prediction for each case, the comments provide the detail of the rules vote. Finally, the last column (Comparison both case) gives the prediction according to the comparison between the 2 cases with 3 possible outputs (contamination, infection or unconfirmed).
 
-This result file provide a lot of details on the decision making of the tool as the user can decide to rely more or less on some rules/case for manual confirmation.
+This result file provides a lot of details on the decision making of the tool as the user can decide to rely more or less on some rules/case for manual confirmation.
 
 #### Advanced statistic 
 
-In the further_analysis repository there is script that can help you obtain automatically statistic? they are made available even if they are not formally part of Cont-ID. To use them you have to change manually the path in 'if __name__ == "__main__":'
+In the further analysis repository, there is a script that can help you automatically obtain statistic? they are made available even if they are not formally part of Cont-ID. To use them you have to change manually the path in 'if __name__ == "__main__":'
 
-The script compare_predictionv2_vote.py should be used first as it calculate on each result file additional statistic if you provide the indexing status. The indexing status can be given by using an other file that contain the same information as the input file with the addition of the indexing status (the last column called 'Indexing' that contains only 'contamination' or 'infection'). The statistic obtained give you the amount of correc/unknown/wrong prediction for each case/vote_level, the confusion matrix (TP, TN, FP, FN as explain in the article) and number like: Diagnostic sensitivity (DSE), Diagnostic specificity (DSP), accuracy, False Discovery rate (FDR), or False Omission Rate (FOR). 
+The script compare_predictionv2_vote.py should be used first as it calculates on each result file additional statistic if you provide the indexing status. The indexing status can be given by using another file that contain the same information as the input file with the addition of the indexing status (the last column called 'Indexing' that contains only 'contamination' or 'infection'). The statistic obtained give you the amount of correct/unknown/wrong prediction for each case/vote level, the confusion matrix (TP, TN, FP, FN as explain in the article) and number like: Diagnostic sensitivity (DSE), Diagnostic specificity (DSP), accuracy, False Discovery rate (FDR), or False Omission Rate (FOR). 
 
-The script Global_summary_table.py aim to give the previous statistic but between several results that may be connected. In our use case we use several banana sequencing, that script allow the comparison between the diffenrent sequencing batch to try to decide if the threshold used to make the prediction seems the most accurate for banana related data.
+The script Global_summary_table.py aim to give the previous statistic but between several results that may be connected. In our use case we use several banana sequencing, that script allow the comparison between the different sequencing batch to try to decide if the threshold used to make the prediction seems the most accurate for banana related data.
 
-These script are here to help the user to test if the tool's option used work on the their specific training datasets.
+These scripts are here to help the user to test if the tool's option used work on their specific training datasets.
 
 ## Contributing
 
@@ -163,3 +163,4 @@ This project has received funding from the European Union’s Horizon2020 resear
     <img src="https://img.shields.io/twitter/follow/Be_Phytopath?style=social&logo=twitter"
         alt="follow on Twitter">
 </a>       
+  
