@@ -144,7 +144,7 @@ Contributions are what make the open source community such an amazing place to l
 
 If you have a suggestion that would make this better, please fork the repo and create a pull request. Don't forget to give the project a star! Thanks again!
 
-Special thanks to <a href=" https://github.com/ValentinRollin">Valentin Rollin </a> for the help provided for the further_analysis scripts.
+Special thanks to <a href="https://github.com/ValentinRollin">Valentin Rollin </a> for the help provided for the further_analysis scripts.
 
 
 This work was part of the <a href="https://inextvir.eu/Home/WhatIsInextvir">INEXTVIR</a> project.
