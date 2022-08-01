@@ -98,13 +98,13 @@ def calculate_standardize_threshold(control_data, case, standardisation):
     try:
         mean_conta = control_data.groupby("Indexing")['standardize_mapping_ratio'].mean().loc["ABSENT"]
     except KeyError:
-        print("No contamination found in external control, you can be confident that you don't have cross-contamination")
+        print("No contamination found from alien virus (control), you can be confident that you don't have cross-contamination")
         exit(0)
     # std standart deviation of contaminated sample from control virus
     try:
         std_conta = control_data.groupby("Indexing")['standardize_mapping_ratio'].std().loc["ABSENT"]
     except KeyError:
-        print("No contamination found in external control, you can be confident that you don't have cross-contamination")
+        print("No contamination found from alien virus (control), you can be confident that you don't have cross-contamination")
         exit(0)
 
     standardize_t1_threshold = (mean_conta+3*std_conta)/float(current_divider[0])
@@ -168,7 +168,7 @@ def check_comment(list_classification_comment, element, control_name, is_infecti
     #col_name = ["Virus_detected","Sample_name","Sample ID","Reads_nb_mapped", "deduplication"]
     msg = "" 
     if element.Sample_ID in control_name and is_infection:
-        msg += "The sample use for control has another virus labeled as infectious (consider using external control or changing threshold) "
+        msg += "The sample uses for control has another virus labeled as infectious (consider using external control or changing threshold) "
     if element.Reads_nb_mapped <= 5 and is_infection:
         msg += "This infectious label is with less than 5 reads, the result validity is doubtful "
     if element.mapping_ratio == 1 and is_contamination:
