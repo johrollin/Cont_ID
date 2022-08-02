@@ -98,13 +98,13 @@ def calculate_standardize_threshold(control_data, case, standardisation):
     try:
         mean_conta = control_data.groupby("Indexing")['standardize_mapping_ratio'].mean().loc["ABSENT"]
     except KeyError:
-        print("No contamination found from alien virus (control), you can be confident that you don't have cross-contamination")
+        print("No contamination found from alien virus (control), threshold calculation failed")
         exit(0)
     # std standart deviation of contaminated sample from control virus
     try:
         std_conta = control_data.groupby("Indexing")['standardize_mapping_ratio'].std().loc["ABSENT"]
     except KeyError:
-        print("No contamination found from alien virus (control), you can be confident that you don't have cross-contamination")
+        print("No contamination found from alien virus (control), threshold calculation failed")
         exit(0)
 
     standardize_t1_threshold = (mean_conta+3*std_conta)/float(current_divider[0])
