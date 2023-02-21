@@ -60,7 +60,7 @@ The input template file for control & data are csv files available in this repos
 - **Mapped reads Nr.** : Reads number that map the specific virus on the specific sample.
 - **Mapped reads deduplication...** : percentage of reads removed by deduplication (see article) can be fill with 'ND' (No Data) if not calculated or below the deduplication limit.
 - **Total_Reads_Nr**: total reads number of the specific sample.
-
+- **Indexing**: Only for the control file. the column should be filled with (ABSENT/PRESENT) if possible in capital letter according to the status of the alien control in each datasets it is detected.
 The control file should contain the same columns with an additional indexing one that can be filled with 'contamination' or 'infection'.
 
 #### How to launch
