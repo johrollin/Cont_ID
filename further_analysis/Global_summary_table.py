@@ -209,7 +209,7 @@ def run_analysis(data_base, data_base_comp, data_conf_matrix, data_conf_matrix_c
                
 if __name__ == "__main__":
 
-    out_dir = "/mnt/c/Users/johan/OneDrive/Bureau/bioinfo/Wei_virus_test/Key_sample/ALL_final_version_vote/human/Global/"
+    out_dir = "/mnt/c/Users/johan/OneDrive/Bureau/bioinfo/Wei_virus_test/Key_sample/ALL_final_version_vote/ContID_human_relax/Global/"
     out_dir_res_towrite = out_dir + "Analysis/"
     file1 = out_dir + "project_analysis_base.csv"
     file2 = out_dir + "project_analysis_base_comp.csv"
