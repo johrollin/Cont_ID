@@ -11,10 +11,12 @@
         <a href="https://github.com/johrollin/Cont_ID/graphs/contributors" alt="Contributors">
             <img src="https://img.shields.io/github/contributors/johrollin/Cont_ID">
         </a>     
-        <br/>           
+        <br/> 
         <a href="https://www.biorxiv.org/content/XX">
           <img src="https://zenodo.org/badge/DOI/XX/XX.svg">
-        </a>
+        </a>           
+        <a href="https://doi.org/10.5281/zenodo.8199626"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.8199626.svg" alt="DOI"></a>
+
     
  </p>
 
