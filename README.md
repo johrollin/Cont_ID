@@ -12,8 +12,8 @@
             <img src="https://img.shields.io/github/contributors/johrollin/Cont_ID">
         </a>     
         <br/> 
-        <a href="https://www.biorxiv.org/content/XX">
-          <img src="https://zenodo.org/badge/DOI/XX/XX.svg">
+        <a href="https://doi.org/10.1186/s12915-023-01708-w">
+          <img src="https://zenodo.org/badge/DOI/10.1186/s12915-023-01708-w.svg">
         </a>           
         <a href="https://doi.org/10.5281/zenodo.8199626"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.8199626.svg" alt="DOI"></a>
 
@@ -23,7 +23,7 @@
 # About The Project
 Cont-ID is a method designed to check for cross-contamination in viruses previously identified  in metagenomic datasets. It relies on a simple principle, every sample in a sequencing batch should have been processed the same way with at least one alien control. It uses a voting system to classify every species prediction on every sample of the sequencing batch into (true) infection or (cross) contamination. This tool helps the virologist confirm viral detection in HTS data.
 
-For more information: https://www.biorxiv.org/content/XX 
+For more information: <a href="https://doi.org/10.1186/s12915-023-01708-w"> see article</a>     
 
 # Getting Started
 
